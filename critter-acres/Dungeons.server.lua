@@ -17,6 +17,9 @@
 --   * 🙈 hidden chests in little nooks in the cliff, behind a bush you walk through or a cracked rock you break (⛏️ hold)
 --   * 🏃 a runaway chest with googly eyes: it hops away down the trails when you come close, then gets tired
 --   * 📜 scrolls / ⭐ run score / 🎉 first-clear bonus: ServerScriptService.DungeonRewards (API.dungeonScroll, API.dungeonCleared)
+-- 🧩 stage 4 (ServerScriptService.DungeonExtras, API.dungeonExtras(run) at the end of build with run.map): easy puzzles,
+--   🌟 secret spots, cute traps, 🐾 buddy sniff, 🗺️ minimap + way home, the boss calling helpers. 🔘 lever doors live here
+--   (a nook whose stone door slides down when you pull a lever across the clearing).
 -- Walls block things: run.blocked(a, b) tells Combat when terrain / the gate is in the way (no attacks, shots or
 -- noticing through it) and run.clampGoal keeps every mob inside its own clearing.
 -- All tuning lives in Data.Dungeon (CritterData). Mobs come from ServerStorage.MobModels.<Land> like the lands.
@@ -474,8 +477,9 @@ local function build(run)
 			if c ~= start and c ~= keyCell and not onRoute[c] and not table.find(fires, c) then table.insert(cands, c) end
 		end
 		for i = #cands, 2, -1 do local j = rng:NextInteger(1, i) cands[i], cands[j] = cands[j], cands[i] end
+		local want = (tier.Hidden or 0) + (tier.Levers or 0)
 		for _, c in cands do
-			if #nooks >= (tier.Hidden or 0) then break end
+			if #nooks >= want then break end
 			local nd = node[c]
 			for _ = 1, 12 do
 				local a = rng:NextNumber(0, math.pi * 2)
@@ -491,7 +495,7 @@ local function build(run)
 					end
 				end
 				if ok then
-					local nk = {p = ctr, r = 5, c = "Nook", home = nd, dir = dir}
+					local nk = {p = ctr, r = 5, c = "Nook", home = nd, dir = dir, lever = #nooks >= (tier.Hidden or 0)}
 					table.insert(nooks, nk)
 					table.insert(allNodes, nk)
 					break
@@ -1018,8 +1022,10 @@ local function build(run)
 			end
 		end
 	end
+	local bossModel
 	if boss then
 		local bm = mob(boss, ac, 12, 2)
+		bossModel = bm
 		bm:GetAttributeChangedSignal("Dead"):Connect(function()
 			if bm:GetAttribute("Dead") then task.spawn(bossBeaten) end
 		end)
@@ -1052,7 +1058,48 @@ local function build(run)
 		local mouth = W(nk.home.p + nk.dir * (nk.home.r + 0.5))
 		run.makeChest(CFrame.lookAt(inside, Vector3.new(mouth.X, inside.Y, mouth.Z)), "Hidden")
 		local face = CFrame.lookAt(mouth, mouth + fwd) -- -Z points into the nook
-		if (i + rng:NextInteger(0, 1)) % 2 == 0 then
+		if nk.lever then
+			-- 🔘 a stone door with a lever across the clearing: pull it and the door slides down into the ground
+			local door = P(blockers, {Name = "LeverDoor", Size = Vector3.new(11, 10, 2.4), CFrame = face * CFrame.new(0, 4.6, 0),
+				Color = th.PillarColor, Material = th.PillarMat, CanQuery = true})
+			local trim = P(folder, {Name = "DoorTrim", Size = Vector3.new(11.4, 0.6, 2.8), CFrame = face * CFrame.new(0, 9.7, 0), Color = th.Accent, Material = M.Neon,
+				CanCollide = false, CanQuery = false, CanTouch = false})
+			-- the lever: on the far side of the same clearing, away from the trails
+			local home = nk.home
+			local lp, bestD = nil, -math.huge
+			for k = 0, 11 do
+				local a = math.atan(-nk.dir.Y, -nk.dir.X) + (k - 5.5) * 0.25
+				local p2 = home.p + Vector2.new(math.cos(a), math.sin(a)) * (home.r - 3)
+				local _, dPath = field(p2)
+				if dPath > bestD then lp, bestD = p2, dPath end
+			end
+			local lw = W(lp)
+			local lcf = CFrame.lookAt(lw, Vector3.new(O.X + home.p.X, lw.Y, O.Z + home.p.Y))
+			P(folder, {Name = "LeverBase", Size = Vector3.new(3, 1.2, 2), CFrame = lcf * CFrame.new(0, 0.6, 0), Color = th.PillarColor, Material = th.PillarMat})
+			local stick = P(folder, {Name = "LeverStick", Size = Vector3.new(0.5, 3.4, 0.5), CFrame = lcf * CFrame.new(0, 2.6, 0) * CFrame.Angles(math.rad(-35), 0, 0),
+				Color = Color3.fromRGB(150, 100, 60), Material = M.Wood, CanCollide = false})
+			local knob = egg(folder, {Name = "LeverKnob", Size = Vector3.one * 1.2, CFrame = stick.CFrame * CFrame.new(0, 1.8, 0), Color = th.Accent, Material = M.Neon, CanCollide = false})
+			sparkle(knob, th.Accent, 2)
+			R.chip(run, lw + Vector3.new(0, 7, 0), "🔘", "Lever")
+			local pulled = false
+			local lprompt = API.makePrompt(stick, "🔘 Pull", "Lever")
+			lprompt.MaxActivationDistance = 10
+			lprompt.Triggered:Connect(function(player)
+				if R.runOf[player] ~= run or pulled then return end
+				pulled = true
+				lprompt.Enabled = false
+				TweenService:Create(stick, TweenInfo.new(0.4, Enum.EasingStyle.Back), {CFrame = lcf * CFrame.new(0, 2.6, 0) * CFrame.Angles(math.rad(35), 0, 0)}):Play()
+				TweenService:Create(knob, TweenInfo.new(0.4, Enum.EasingStyle.Back), {CFrame = lcf * CFrame.new(0, 2.6, 0) * CFrame.Angles(math.rad(35), 0, 0) * CFrame.new(0, 1.8, 0)}):Play()
+				API.pop(door, "🔓")
+				TweenService:Create(door, TweenInfo.new(2, Enum.EasingStyle.Quad), {CFrame = door.CFrame - Vector3.new(0, 10.5, 0)}):Play()
+				TweenService:Create(trim, TweenInfo.new(2, Enum.EasingStyle.Quad), {CFrame = trim.CFrame - Vector3.new(0, 10.5, 0), Transparency = 1}):Play()
+				task.delay(2.1, function()
+					door.CanCollide = false
+					if door.Parent then door.Parent = folder end -- (out of Blockers)
+				end)
+				toastRun(run, ("🔘 %s pulled a lever! A secret door opened somewhere close by."):format(player.DisplayName))
+			end)
+		elseif (i + rng:NextInteger(0, 1)) % 2 == 0 then
 			-- 🌿 a bush wall: soft, you walk right through it (a few sparkles hint at it)
 			local leaf = land == "Peaks" and Color3.fromRGB(225, 240, 255) or (land == "Volcano" and Color3.fromRGB(110, 80, 80) or Color3.fromRGB(80, 165, 70))
 			local mat = land == "Peaks" and M.Snow or M.Grass
@@ -1176,6 +1223,15 @@ local function build(run)
 		return Vector3.new(O.X + nd.p.X, 0, O.Z + nd.p.Y)
 	end
 	run.layout = {dungeon = true}
+	-- 🧩 everything stage 4 (DungeonExtras) needs to know about this map
+	run.map = {node = node, open = open, trails = trails, trailOf = trailOf, start = start, bossCell = bossCell, keyCell = keyCell, arena = ARENA,
+		fires = fires, busy = busy, onRoute = onRoute, marked = marked, nooks = nooks, zoneOf = zoneOf, dist = dist, n = n,
+		W = W, field = field, rng = rng, O = O, folder = folder, blockers = blockers, theme = th, tier = tier, land = land,
+		mob = mob, normal = normal, special = special, boss = bossModel, depthOf = depthOf}
+	if API.dungeonExtras then
+		local ok, err = pcall(API.dungeonExtras, run)
+		if not ok then warn("[Dungeons] stage 4 extras: " .. tostring(err)) end
+	end
 	run.t0 = os.clock() -- ⭐ the run score's clock
 end
 
@@ -1186,14 +1242,15 @@ local CHEST = {
 	Boss = {Scale = 1.2, Res = {3, 6}, Text = "🎁 Boss chest! ", Act = "🎁 Open", Obj = "Boss chest", Pop = "🎉"},
 	Hidden = {Scale = 0.8, Res = {2, 4}, Text = "🙈 Secret chest! ", Act = "🙈 Open", Obj = "Secret chest", Pop = "🌟"},
 	Runaway = {Scale = 0.8, Res = {2, 5}, Text = "🏃 You caught the runaway chest! ", Act = "🏃 Open", Obj = "Runaway chest", Pop = "🎉"},
+	Puzzle = {Scale = 0.85, Res = {2, 4}, Text = "🧩 Puzzle chest! ", Act = "🧩 Open", Obj = "Puzzle chest", Pop = "🌟"},
 }
 local function makeChestFor(run)
 	local land = run.terrain
 	local tier = D.Tiers[run.tier or 1] or D.Tiers[1]
 	return function(cf, kind)
 		local k = CHEST[kind] or CHEST.Wood
-		local mult = ({Boss = D.BossChestX, Silver = D.SilverX, Hidden = D.HiddenX, Runaway = D.RunawayX})[kind] or 1
-		local capChance = ({Boss = 1, Silver = D.SilverCapsule, Hidden = D.HiddenCapsule, Runaway = D.RunawayCapsule})[kind] or D.ChestCapsule
+		local mult = ({Boss = D.BossChestX, Silver = D.SilverX, Hidden = D.HiddenX, Runaway = D.RunawayX, Puzzle = D.PuzzleX})[kind] or 1
+		local capChance = ({Boss = 1, Silver = D.SilverCapsule, Hidden = D.HiddenCapsule, Runaway = D.RunawayCapsule, Puzzle = D.PuzzleCapsule})[kind] or D.ChestCapsule
 		local m, box = R.treasure(run.folder, cf, {Color = (D.Themes[land] or D.Themes.Meadow).Accent}, k.Scale)
 		if kind ~= "Boss" then run.chestTotal = (run.chestTotal or 0) + 1 end -- (⭐ run score: find half of them)
 		if kind == "Silver" then -- silver bands instead of gold
@@ -1202,6 +1259,8 @@ local function makeChestFor(run)
 			end
 		end
 		local seen = {}
+		run.chests = run.chests or {} -- (🐾 the buddy sniff looks for ones you haven't opened)
+		table.insert(run.chests, {box = box, kind = kind, seen = seen})
 		local prompt = API.makePrompt(box, k.Act, k.Obj)
 		prompt.MaxActivationDistance = kind == "Silver" and 7 or 12 -- (a ledge chest can't be opened from the ground below)
 		prompt.Triggered:Connect(function(player)

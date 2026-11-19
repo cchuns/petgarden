@@ -38,15 +38,25 @@ Data.Dungeon = {
 	-- ⭐ run score (when the boss falls): ⭐ cleared, ⭐ beat the Par time (seconds, per tier), ⭐ found half the chests
 	ScoreBonus = {1, 1.25, 1.5}, -- 🎁 boss chest coins x this for 1 / 2 / 3 stars
 	FirstClearX = 3, -- 🎉 first time you clear a dungeon at a ⭐ tier: bonus coins = boss chest coins x this, plus a capsule
+	-- 🧩 stage 4 (ServerScriptService.DungeonExtras + StarterPlayerScripts.DungeonMap)
+	PuzzleX = 2.5, PuzzleCapsule = 0.5, -- 🧩 a solved puzzle's chest: coins x this, chance of a capsule
+	SecretCoins = 30, -- 🌟 a secret spot: coins (x the tier's Loot), once per explorer
+	SniffCd = 20, -- 🐾 seconds between buddy sniffs (paw prints to the nearest chest you haven't opened)
+	SlowFor = 1.5, SlowX = 0.5, -- 🟢 sticky puddle: seconds and walk speed x
+	BounceUp = 70, -- 🦘 bounce pad: how hard it throws you up
+	BonkPush = 45, -- ⛄ rolling ball: how hard it bonks you back (it never hurts)
+	HelperAt = 0.5, -- 👑 the boss calls helpers when its HP drops below this
 	-- Size = clearings per side, Loops = extra trails (more ways through), Mobs = chance a clearing has mobs,
 	-- Depth = extra mob levels (0-2), Chests = 🧺 chests, Loot = chest coin multiplier,
 	-- Zones = how many 🎨 areas, Ledges = 🪜 ledge routes, Route = clearings between the way up and the ledge,
 	-- Obby = chance the way up is 🦘 jump pads (else stone steps), Pads = chance a crossing is jump pads (else a bridge)
 	-- Hidden = 🙈 hidden chests, Runaway = 🏃 runaway chests, Par = ⭐ time goal in seconds
+	-- Puzzles = 🧩 easy puzzles (torches / colour tiles / push block), Levers = 🔘 lever doors (a secret nook), Secrets = 🌟 secret spots,
+	-- Traps = cute traps on the trails (🟢 puddles, 🦘 bounce pads, ⛄ rolling balls), Helpers = mobs the boss calls at half HP
 	Tiers = {
-		{Size = 4, Loops = 0.12, Mobs = 0.5, Depth = 0, Chests = 3, Loot = 1, Zones = 3, Ledges = 1, Route = 1, Obby = 0.4, Pads = 0.3, Hidden = 1, Runaway = 1, Par = 420},
-		{Size = 5, Loops = 0.15, Mobs = 0.6, Depth = 1, Chests = 4, Loot = 1.6, Zones = 3, Ledges = 2, Route = 2, Obby = 0.5, Pads = 0.4, Hidden = 2, Runaway = 1, Par = 600},
-		{Size = 6, Loops = 0.18, Mobs = 0.7, Depth = 2, Chests = 5, Loot = 2.4, Zones = 4, Ledges = 3, Route = 2, Obby = 0.6, Pads = 0.5, Hidden = 2, Runaway = 1, Par = 840},
+		{Size = 4, Loops = 0.12, Mobs = 0.5, Depth = 0, Chests = 3, Loot = 1, Zones = 3, Ledges = 1, Route = 1, Obby = 0.4, Pads = 0.3, Hidden = 1, Runaway = 1, Par = 420, Puzzles = 1, Levers = 0, Secrets = 1, Traps = 3, Helpers = 1},
+		{Size = 5, Loops = 0.15, Mobs = 0.6, Depth = 1, Chests = 4, Loot = 1.6, Zones = 3, Ledges = 2, Route = 2, Obby = 0.5, Pads = 0.4, Hidden = 2, Runaway = 1, Par = 600, Puzzles = 1, Levers = 1, Secrets = 2, Traps = 5, Helpers = 2},
+		{Size = 6, Loops = 0.18, Mobs = 0.7, Depth = 2, Chests = 5, Loot = 2.4, Zones = 4, Ledges = 3, Route = 2, Obby = 0.6, Pads = 0.5, Hidden = 2, Runaway = 1, Par = 840, Puzzles = 2, Levers = 1, Secrets = 2, Traps = 7, Helpers = 3},
 	},
 	-- terrain: Ground / Path / Cliff / Top (cliff tops) / Ceil (cave ceiling) materials; Edge = props along the edges
 	-- (bushes, rocks, crystals: names from ServerStorage.RealmProps / IslandProps), Trees = props on the cliff tops,

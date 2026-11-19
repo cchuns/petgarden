@@ -134,7 +134,7 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [ ] **Playtest v3 first** (map building is brand new and has never run)
 - [x] Stage 3 built 2026-11-19 (see RESUME "Dungeon stage 3"); still to do: real shapes for the 15 🧱 scroll decorations, best ⭐ in the portal picker
 - [x] ~~Stage 3:~~ ⚔️ boss gear sets (2-piece bonus + glow), 📜 furniture scrolls → dungeon-only decorations (🧱 placeholders, then shapes) + a scroll album + a guaranteed drop, 🙈 hidden chests (push-through bushes, breakable cracked rock), 🏃 runaway chest, ⭐ run score, 🎉 first-clear bonus
-- [ ] Stage 4: easy puzzles (torches, colour tiles, push block), levers / secret spots, a 🐾 buddy pet that sniffs out chests, a 🗺️ minimap that fills in + a glowing trail home, cute traps (slime puddles, bounce pads, snowballs), the boss calls helpers halfway
+- [x] Stage 4 built 2026-11-19 (RESUME "Dungeon stage 4"), CK to playtest: easy puzzles (torches, colour tiles, push block), levers / secret spots, a 🐾 buddy pet that sniffs out chests, a 🗺️ minimap that fills in + a glowing trail home, cute traps (slime puddles, bounce pads, snowballs), the boss calls helpers halfway
 - [x] Dev menu: jump into dungeon X ⭐N + 🔓 open all dungeons; 🏰 Dungeon Portal stop in the portal picker
 - [ ] Small: check the CritterSync plugin shows after a Studio restart; build real shapes for any 🧱 placeholder decorations CK adds
 

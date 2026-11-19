@@ -954,3 +954,25 @@ Pushed by line splice (Studio's old copies differed from local only by these cha
   A test pull (current GameData + the 2 new files with a few changed numbers) on a CritterData clone loaded and applied the changes.
 - **Checksums (Studio = local):** CritterData 135906/666448 (apply fn 15572/244830 = editor/CritterData.apply.lua up to `Data.GameDataOn = true\nend\n`).
 - **Next:** 3D models for the 5 set weapons; scroll decoration shapes; dungeon stage 4.
+
+## 🧩 Dungeon stage 4 (2026-11-19, IN STUDIO, compiled; NOT playtested)
+- **Dungeons.server** (62389/880906): 🔘 lever doors (extra nooks `tier.Levers` after the hidden ones, `nk.lever`): a stone door in Blockers
+  + a lever across the same clearing (prompt "🔘 Pull"); the door slides down. New chest kind "Puzzle" (`D.PuzzleX`, `D.PuzzleCapsule`).
+  `run.chests` = {box, kind, seen} for every chest. At the end of build: `run.map = {node, open, trails, trailOf, start, bossCell, keyCell,
+  arena, fires, busy, onRoute, marked, nooks, zoneOf, dist, n, W, field, rng, O, folder, blockers, theme, tier, land, mob, normal, special,
+  boss, depthOf}` then `API.dungeonExtras(run)` (pcall).
+- **DungeonExtras.server (new, ServerScriptService, 25671/47090):** 🧩 puzzles in quiet clearings (not start/boss/key/fires/routes/landmarks/
+  nook homes, radius >= 13.5): 🔥 Torches (light 3), 🎨 Colour tiles (3 tiles, hint post orbs top→bottom, a wrong step resets), 📦 Push block
+  (prompt pushes 4 studs away from you along X/Z, 🔄 on the switch puts it back) → a 🧩 Puzzle chest. 🌟 secret stars (touch, coins once each).
+  Cute traps on trails (not start / arena trails): 🟢 puddles (tag DungeonPuddle, attr R), 🦘 bounce pads (DungeonBounce), rolling balls
+  (DungeonRoller: invisible path part with attrs Pts "x,y,z;…", Period, Size, Color, Mat; the client rolls it by server time). 👑 boss helpers
+  at `D.HelperAt` HP (tier.Helpers normal mobs via map.mob). DungeonEvent from the client: "Map" (→ layout), "Sniff" (`D.SniffCd`; → "Paws"
+  points to the nearest unopened chest by trail steps; the buddy pet pops 👃), "Home" (→ "Trail" points to the start), "Bonk" (pop).
+- **DungeonMap.client (new, StarterPlayerScripts, 15125/223514):** UIKit minimap panel on the LEFT (middle), shown while the player
+  has attributes Dungeon + Realm; asks "Map" when RealmSeed changes; reveals clearings within R+16 and their trails; 🏠🔥🗝️👑 tags; you blue,
+  party green; ➖ folds it. Buttons 🐾 Sniff / 🏠 Way home. Local paw prints / glowing dots (fade after 12 / 18 s). Trap effects on your own
+  character: puddle WalkSpeed x SlowX for SlowFor s (restored only if unchanged), bounce = velocity BounceUp, ball bonk = BonkPush + up 28.
+- **Data.Dungeon** (CritterData 137264/783050): PuzzleX 2.5, PuzzleCapsule 0.5, SecretCoins 30, SniffCd 20, SlowFor 1.5, SlowX 0.5, BounceUp 70,
+  BonkPush 45, HelperAt 0.5; tiers + Puzzles 1/1/2, Levers 0/1/1, Secrets 1/2/2, Traps 3/5/7, Helpers 1/2/3. Editor 🏰 Dungeons tab has them
+  (dungeon.json, ApplyGameData TIER_KEYS / REWARD_KEYS; apply fn now ends at 15786/261486 + "end\n").
+- **Not done / ideas:** puzzle doors that open shortcuts; the minimap doesn't show chests; set-weapon models; scroll decoration shapes.

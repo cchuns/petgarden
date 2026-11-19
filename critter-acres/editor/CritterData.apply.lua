@@ -225,9 +225,11 @@ function Data.ApplyGameData(json)
 	end
 
 	-- 🏰 Dungeon numbers (editor tab): ⭐ tiers, each dungeon's name / chest coins / furniture scrolls, rewards
-	local TIER_KEYS = {"Size", "Loops", "Mobs", "Depth", "Chests", "Loot", "Zones", "Ledges", "Route", "Obby", "Pads", "Hidden", "Runaway", "Par"}
+	local TIER_KEYS = {"Size", "Loops", "Mobs", "Depth", "Chests", "Loot", "Zones", "Ledges", "Route", "Obby", "Pads", "Hidden", "Runaway", "Par",
+		"Puzzles", "Levers", "Secrets", "Traps", "Helpers"}
 	local REWARD_KEYS = {"Energy", "BossChestX", "ChestCapsule", "SilverX", "SilverCapsule", "HiddenX", "HiddenCapsule", "RockHold",
-		"RunawayX", "RunawayCapsule", "RunawayHops", "RunawayNear", "ScrollChance", "ScrollDoneCoins", "FirstClearX"}
+		"RunawayX", "RunawayCapsule", "RunawayHops", "RunawayNear", "ScrollChance", "ScrollDoneCoins", "FirstClearX",
+		"PuzzleX", "PuzzleCapsule", "SecretCoins", "SniffCd", "SlowFor", "SlowX", "BounceUp", "BonkPush", "HelperAt"}
 	if G.dungeon and Data.Dungeon then
 		local D, t = Data.Dungeon, {Tiers = {}, Lands = {}}
 		for _, r in G.dungeon do
@@ -238,7 +240,7 @@ function Data.ApplyGameData(json)
 				for _, k in TIER_KEYS do
 					if tonumber(r[k]) then tier[k] = tonumber(r[k]) end
 				end
-				for _, k in {"Size", "Depth", "Chests", "Zones", "Ledges", "Route", "Hidden", "Runaway"} do tier[k] = math.max(0, math.floor(tier[k] or 0)) end
+				for _, k in {"Size", "Depth", "Chests", "Zones", "Ledges", "Route", "Hidden", "Runaway", "Puzzles", "Levers", "Secrets", "Traps", "Helpers"} do tier[k] = math.max(0, math.floor(tier[k] or 0)) end
 				tier.Size, tier.Zones, tier.Route = math.clamp(tier.Size, 2, 8), math.clamp(tier.Zones, 1, 4), math.max(1, tier.Route)
 				t.Tiers[i] = tier
 			elseif r.Group == "Land" then
