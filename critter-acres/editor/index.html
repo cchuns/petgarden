@@ -180,6 +180,11 @@ const GEAR_FROM = {Craft:"🔨 Workbench (Leaf / Stone / Iron)",Lands:"🌀 Land
 const fromOf = (it, tab) => Array.isArray(it.From) ? it.From : (tab === "weapons" ? (it.Boss ? [] : ["Capsules"]) : []);
 const setWeaponOf = name => (S.data.herosets||[]).find(x => x.Weapon === name);
 const pctTxt = st => [["⚡",st.Pwr],["❤️",st.HP],["🛡️",st.Def],["👟",st.Spd]].filter(([,v]) => v > 0).map(([i,v]) => `${i}+${Math.round(v*100)}%`).join(" ") + (st.Glow ? " ✨" : "");
+const isG = g => it => it.Group === g;
+const craftTiers = () => (S.data.herotune||[]).filter(r => r.Group === "Craft").map(r => r.Id);
+const TUNE_GROUPS = {Slot:"🧍 Slot bonuses (per rarity step)",Rarity:"💎 Power by rarity",Craft:"🔨 Workbench costs",Land:"🌀 Land boss drops",Chance:"🎲 Drop chances",General:"⚙️ General"};
+const DUN_GROUPS = {Tier:"⭐ Dungeon tiers",Land:"🗺️ Each dungeon",Reward:"🎁 Rewards"};
+const LAND_NAMES = {Meadow:"🌼 Meadow",Forest:"🌲 Forest",Peaks:"🏔️ Peaks",Caves:"💎 Caves",Volcano:"🌋 Volcano"};
 const SAY_HELP = "Words in {curly brackets} turn into numbers for each rank: {Per%} = Per × rank as %, {Dmg%}, {Stun.1} (1 decimal), {Secs}, {r} = rank, {Per%+100} adds 100.";
 // ---------------------------------------------------------------- tabs
 const TABS = {
@@ -326,6 +331,79 @@ const TABS = {
       {key:"Glow",label:"💡 Accent glows",type:"bool"},
       {key:"Extra",label:"🎀 Little extra",type:"select",optional:true,options:EXTRAS},
     ]},
+  herotune:{icon:"⚙️",label:"Gear numbers",idKey:"Id",canAdd:false,canDelete:false,rarities:null,group:"Group",groupLabel:TUNE_GROUPS,
+    title:it=>({Slot:HERO_SLOTS[it.Id],Rarity:`${it.Id} pieces`,Craft:`🔨 ${it.Id} gear`,Land:`${LAND_NAMES[it.Id]||it.Id} bosses`,Chance:"Boss drop chances",General:"General"}[it.Group]||it.Id),
+    sub:it=>({Slot:pctTxt(it)+(it.CostX!==1?` · 🔨×${it.CostX}`:""),Rarity:`⚡${it.Pwr} · 💰${it.MaxedCoins}`,Craft:costText(it.Cost),
+      Land:`${(it.Tiers||[]).join(" / ")||"no gear"} · 🏰 ${it.DungeonSet||"no set"}`,Chance:`gear ${pct(it.Boss)} / ${pct(it.Dungeon)}`,General:`⭐${it.MaxStars} · 🛡️ max ${pct(it.DefCap)}`}[it.Group]||""),
+    note:"⚙️ The numbers behind 🛡️ Hero gear: what each slot gives, power by rarity, Workbench costs, and which bosses drop what. Chances are %: 25 = 1 in 4.",
+    fields:[
+      {key:"Id",label:"🆔 ID",type:"id",locked:true},
+      {key:"HP",label:"❤️ Max HP per step %",type:"pct",optional:true,min:0,step:0.5,showIf:isG("Slot"),hint:"Common = 1 step … Mythic = 6 steps. 3 = +3% max HP per step."},
+      {key:"Def",label:"🛡️ Less hurt per step %",type:"pct",optional:true,min:0,step:0.5,showIf:isG("Slot")},
+      {key:"Spd",label:"👟 Walk speed per step %",type:"pct",optional:true,min:0,step:0.5,showIf:isG("Slot"),hint:"Only in the wild lands and dungeons."},
+      {key:"CostX",label:"🔨 Workbench cost ×",type:"number",min:0.1,step:0.05,showIf:isG("Slot"),hint:"Big pieces cost more: 1.5 = 50% more than the 🔨 cost."},
+      {key:"Pwr",label:"⚡ Power one piece adds",type:"number",min:0,step:1,showIf:isG("Rarity")},
+      {key:"MaxedCoins",label:"💰 Coins for a copy at max ⭐",type:"number",min:0,step:10,showIf:isG("Rarity")},
+      {key:"Cost",label:"🔨 Cost to make one piece",type:"cost",wide:true,showIf:isG("Craft"),hint:"Times the slot's 🔨 cost × (Slot bonuses)."},
+      {key:"Tiers",label:"🎨 Gear looks this land's bosses drop",type:"checks",wide:true,showIf:isG("Land"),options:()=>(S.data.herolooks||[]).map(l=>l.Id),
+        hint:"Only pieces ticked 🌀 Land bosses in 🛡️ Hero gear drop."},
+      {key:"DungeonSet",label:"🏰 This land's dungeon boss drops set",type:"select",optional:true,showIf:isG("Land"),
+        options:()=>({"":"— any 🏰 piece —",...Object.fromEntries((S.data.herosets||[]).map(x=>[x.Id,`${x.Icon} ${x.Display}`]))})},
+      {key:"Boss",label:"🌀 Land boss drops a gear piece %",type:"pct",min:0,max:100,step:1,showIf:isG("Chance")},
+      {key:"Dungeon",label:"🏰 Dungeon boss drops a gear piece %",type:"pct",min:0,max:100,step:1,showIf:isG("Chance")},
+      {key:"SetWeapon",label:"⚔️ Dungeon boss drops its set weapon %",type:"pct",min:0,max:100,step:1,showIf:isG("Chance")},
+      {key:"WeaponLands",label:"🌀 Land boss drops a weapon %",type:"pct",min:0,max:100,step:1,showIf:isG("Chance"),hint:"One of the weapons ticked 🌀 Land bosses in ⚔️ Weapons."},
+      {key:"WeaponDungeons",label:"🏰 Dungeon boss drops a weapon %",type:"pct",min:0,max:100,step:1,showIf:isG("Chance"),hint:"One of the weapons ticked 🏰 Dungeon bosses in ⚔️ Weapons."},
+      {key:"DefCap",label:"🛡️ Most “less hurt” anyone can get %",type:"pct",min:0,max:90,step:1,showIf:isG("General")},
+      {key:"MaxStars",label:"⭐ Most stars on a piece",type:"number",min:0,max:10,step:1,showIf:isG("General"),hint:"Each copy you already have adds a ⭐."},
+      {key:"StarBonus",label:"⭐ Each star adds %",type:"pct",min:0,step:1,showIf:isG("General")},
+      {key:"CraftReach",label:"📏 Workbench reach (studs)",type:"number",min:4,step:1,showIf:isG("General")},
+    ]},
+  dungeon:{icon:"🏰",label:"Dungeons",idKey:"Id",canAdd:false,canDelete:false,rarities:null,group:"Group",groupLabel:DUN_GROUPS,
+    title:it=>({Tier:`${it.Icon} Tier ${String(it.Id).replace(/\D/g,"")}`,Land:it.Name||it.Id,Reward:"Chests, scrolls + stars"}[it.Group]||it.Id),
+    sub:it=>({Tier:`${it.Size}×${it.Size} · 🧺${it.Chests} · 🙈${it.Hidden} · ⏱️${it.Par}s`,Land:`${LAND_NAMES[it.Id]||it.Id} · 🧺 ${it.ChestCoins}💰 · 📜 ${(it.Scrolls||[]).length}`,
+      Reward:`⚡${it.Energy} · 🎁×${it.BossChestX} · 📜 ${pct(it.ScrollChance)}`}[it.Group]||""),
+    note:"🏰 Dungeon Portal numbers. ⭐ tiers: how big and hard each tier is. Each dungeon: its name, chest coins and 📜 furniture scrolls. Chances are %: 20 = 1 in 5.",
+    fields:[
+      {key:"Id",label:"🆔 ID",type:"id",locked:true},
+      {key:"Icon",label:"😀 Icon",type:"emoji",showIf:isG("Land")},
+      {key:"Name",label:"🏷️ Dungeon name",type:"text",showIf:isG("Land")},
+      {key:"ChestCoins",label:"🧺 Coins in a chest",type:"number",min:0,step:5,showIf:isG("Land"),hint:"Times the ⭐ tier's loot ×. Other chests multiply this (🎁 Rewards)."},
+      {key:"Scrolls",label:"📜 Furniture scrolls found here",type:"namelist",wide:true,showIf:isG("Land"),
+        hint:"Decorations you can only unlock with a scroll from this dungeon. The 🎁 boss chest always has one you don't have yet."},
+      {key:"Size",label:"🗺️ Size (clearings per side)",type:"number",min:2,max:8,step:1,showIf:isG("Tier")},
+      {key:"Loops",label:"🔁 Extra trails %",type:"pct",min:0,max:100,step:1,showIf:isG("Tier"),hint:"More ways through the map."},
+      {key:"Mobs",label:"👾 Clearings with mobs %",type:"pct",min:0,max:100,step:5,showIf:isG("Tier")},
+      {key:"Depth",label:"📈 Extra mob levels",type:"number",min:0,max:5,step:1,showIf:isG("Tier")},
+      {key:"Chests",label:"🧺 Chests",type:"number",min:0,step:1,showIf:isG("Tier")},
+      {key:"Loot",label:"💰 Chest coins ×",type:"number",min:0,step:0.1,showIf:isG("Tier")},
+      {key:"Zones",label:"🎨 Areas (1–4)",type:"number",min:1,max:4,step:1,showIf:isG("Tier")},
+      {key:"Ledges",label:"🪜 Ledge routes",type:"number",min:0,step:1,showIf:isG("Tier")},
+      {key:"Route",label:"🛤️ Clearings to walk to a ledge",type:"number",min:1,step:1,showIf:isG("Tier")},
+      {key:"Obby",label:"🦘 Way up is jump pads %",type:"pct",min:0,max:100,step:5,showIf:isG("Tier"),hint:"Else stone steps."},
+      {key:"Pads",label:"🦘 Crossing is jump pads %",type:"pct",min:0,max:100,step:5,showIf:isG("Tier"),hint:"Else a bridge."},
+      {key:"Hidden",label:"🙈 Hidden chests",type:"number",min:0,step:1,showIf:isG("Tier")},
+      {key:"Runaway",label:"🏃 Runaway chests",type:"number",min:0,step:1,showIf:isG("Tier")},
+      {key:"Par",label:"⏱️ ⭐ Time goal (seconds)",type:"number",min:30,step:30,showIf:isG("Tier"),hint:"Beat the boss faster than this for a ⭐."},
+      {key:"Energy",label:"⚡ Raid energy to go in",type:"number",min:0,step:1,showIf:isG("Reward")},
+      {key:"BossChestX",label:"🎁 Boss chest coins ×",type:"number",min:0,step:0.5,showIf:isG("Reward")},
+      {key:"ChestCapsule",label:"🧺 Chest has a capsule %",type:"pct",min:0,max:100,step:5,showIf:isG("Reward")},
+      {key:"SilverX",label:"✨ Silver (ledge) chest coins ×",type:"number",min:0,step:0.5,showIf:isG("Reward")},
+      {key:"SilverCapsule",label:"✨ Silver chest has a capsule %",type:"pct",min:0,max:100,step:5,showIf:isG("Reward")},
+      {key:"HiddenX",label:"🙈 Hidden chest coins ×",type:"number",min:0,step:0.5,showIf:isG("Reward")},
+      {key:"HiddenCapsule",label:"🙈 Hidden chest has a capsule %",type:"pct",min:0,max:100,step:5,showIf:isG("Reward")},
+      {key:"RockHold",label:"⛏️ Seconds to break a cracked rock",type:"number",min:0,step:0.1,showIf:isG("Reward")},
+      {key:"RunawayX",label:"🏃 Runaway chest coins ×",type:"number",min:0,step:0.5,showIf:isG("Reward")},
+      {key:"RunawayCapsule",label:"🏃 Runaway chest has a capsule %",type:"pct",min:0,max:100,step:5,showIf:isG("Reward")},
+      {key:"RunawayHops",label:"🏃 Hops before it gets tired",type:"number",min:0,step:1,showIf:isG("Reward")},
+      {key:"RunawayNear",label:"🏃 Hops when you're this close (studs)",type:"number",min:4,step:1,showIf:isG("Reward")},
+      {key:"ScrollChance",label:"📜 Hidden / silver / runaway chest has a scroll %",type:"pct",min:0,max:100,step:1,showIf:isG("Reward")},
+      {key:"ScrollDoneCoins",label:"📜 Coins instead when you have them all",type:"number",min:0,step:10,showIf:isG("Reward"),hint:"Times the ⭐ tier's loot ×."},
+      {key:"FirstClearX",label:"🎉 First clear bonus × (boss chest coins)",type:"number",min:0,step:0.5,showIf:isG("Reward"),hint:"Plus a capsule. Once per dungeon per ⭐ tier."},
+      {key:"Score1",label:"⭐ 1 star: boss chest ×",type:"number",min:0,step:0.05,showIf:isG("Reward")},
+      {key:"Score2",label:"⭐⭐ 2 stars: boss chest ×",type:"number",min:0,step:0.05,showIf:isG("Reward")},
+      {key:"Score3",label:"⭐⭐⭐ 3 stars: boss chest ×",type:"number",min:0,step:0.05,showIf:isG("Reward"),hint:"Stars: ⭐ cleared, ⭐ beat the time goal, ⭐ found half the chests."},
+    ]},
 };
 // ---------------------------------------------------------------- state
 const S = {data:{}, saved:{}, origIds:{}, tab:"weapons", sel:{}, studio:{}, version:0, filter:"", rar:"", errors:[], models:new Set(),
@@ -411,10 +489,12 @@ function validate(){
       if (id && seen.has(id)) add("e", k, id, `${T.icon} Two items are called “${id}”`);
       seen.add(id);
       for (const f of T.fields) {
-        if (f.type === "number" && !(f.optional && it[f.key] === undefined) && (!f.showIf || f.showIf(it))) {
-          const v = it[f.key];
-          if (typeof v !== "number" || !isFinite(v)) add("e", k, id, `${T.icon} ${id}: “${f.label.replace(/^\S+ /,"")}” needs a number`);
-          else if (f.min !== undefined && v < f.min) add("e", k, id, `${T.icon} ${id}: “${f.label.replace(/^\S+ /,"")}” is below ${f.min}`);
+        if ((f.type === "number" || f.type === "pct") && !(f.optional && it[f.key] === undefined) && (!f.showIf || f.showIf(it))) {
+          const v = it[f.key], sv = f.type === "pct" ? v * 100 : v, nm = f.label.replace(/^\S+ /,"");
+          if (typeof v !== "number" || !isFinite(v)) add("e", k, id, `${T.icon} ${id}: “${nm}” needs a number`);
+          else if (f.min !== undefined && sv < f.min - 1e-9) add("e", k, id, `${T.icon} ${id}: “${nm}” is below ${f.min}`);
+          else if (f.max !== undefined && sv > f.max + 1e-9) add("e", k, id, `${T.icon} ${id}: “${nm}” is above ${f.max}`);
+          else if (f.type === "number" && f.step === 1 && v % 1) add("e", k, id, `${T.icon} ${id}: “${nm}” needs a whole number`);
         }
       }
       for (const key of ["Display","Name","JobText","Say"]) if (typeof it[key] === "string" && it[key].includes("🪙")) add("w", k, id, `${T.icon} ${id}: 🪙 doesn't show in Roblox, use 💰`);
@@ -460,7 +540,7 @@ function validate(){
     if (!lookIds.has(g.Tier)) add("e","herogear",g.Name,`🛡️ ${g.Name}: look “${g.Tier}” doesn't exist`);
     if (g.Set && !setIds.has(g.Set)) add("e","herogear",g.Name,`🛡️ ${g.Name}: set “${g.Set}” doesn't exist`);
     const gf = fromOf(g, "herogear");
-    if (gf.includes("Craft") && !["Leaf","Stone","Iron"].includes(g.Tier)) add("e","herogear",g.Name,`🛡️ ${g.Name}: 🔨 Workbench only works for Leaf / Stone / Iron looks (they have costs)`);
+    if (gf.includes("Craft") && !craftTiers().includes(g.Tier)) add("e","herogear",g.Name,`🛡️ ${g.Name}: 🔨 Workbench only works for ${craftTiers().join(" / ")} looks (they have costs in ⚙️ Gear numbers)`);
     if (!gf.length) add("w","herogear",g.Name,`🛡️ ${g.Name}: nothing is ticked under “Where players get it”, so nobody can get it`);
   }
   for (const x of HS) {
@@ -479,6 +559,33 @@ function validate(){
     if (x.Weapon && !wByName[x.Weapon]) add("e","herosets",x.Id,`✨ ${x.Display}: weapon “${x.Weapon}” doesn't exist`);
     else if (x.Weapon && fromOf(wByName[x.Weapon], "weapons").includes("Capsules")) add("w","herosets",x.Id,`✨ ${x.Display}: its weapon also comes from 🎁 capsules (untick that in ⚔️ Weapons to keep it special)`);
     if (x.Weapon && HS.some(o => o !== x && o.Weapon === x.Weapon)) add("e","herosets",x.Id,`✨ ${x.Display}: another set already uses ${x.Weapon}`);
+  }
+  // ⚙️ gear numbers
+  for (const r of S.data.herotune || []) {
+    if (r.Group === "Craft") {
+      if (!lookIds.has(r.Id)) add("e","herotune",r.Id,`⚙️ 🔨 ${r.Id}: there is no 🎨 Gear look called ${r.Id}`);
+      if (!Object.values(r.Cost || {}).some(n => n > 0)) add("w","herotune",r.Id,`⚙️ 🔨 ${r.Id} gear is free to make`);
+      for (const [res, n] of Object.entries(r.Cost || {})) if (!(n >= 0) || n % 1) add("e","herotune",r.Id,`⚙️ 🔨 ${r.Id}: ${res} cost needs a whole number`);
+    }
+    if (r.Group === "Land") {
+      for (const t of r.Tiers || []) if (!lookIds.has(t)) add("e","herotune",r.Id,`⚙️ ${r.Id}: look “${t}” doesn't exist`);
+      if (!(r.Tiers || []).length) add("w","herotune",r.Id,`⚙️ ${r.Id}: land bosses here drop no gear (no look ticked)`);
+      else if (!HG.some(g => (r.Tiers||[]).includes(g.Tier) && fromOf(g, "herogear").includes("Lands"))) add("w","herotune",r.Id,`⚙️ ${r.Id}: no piece of ${r.Tiers.join(" / ")} is ticked 🌀 Land bosses, so any 🌀 piece drops`);
+      if (r.DungeonSet && !setIds.has(r.DungeonSet)) add("e","herotune",r.Id,`⚙️ ${r.Id}: set “${r.DungeonSet}” doesn't exist`);
+    }
+    if (r.Group === "Rarity" && !WEAPON_RAR.includes(r.Id)) add("e","herotune",r.Id,`⚙️ unknown rarity ${r.Id}`);
+  }
+  // 🏰 dungeon numbers
+  const decorNames = new Set((S.data.decor || []).map(d => d.Name)), scrollAt = {};
+  for (const r of S.data.dungeon || []) {
+    if (r.Group !== "Land") continue;
+    if (!String(r.Name || "").trim()) add("e","dungeon",r.Id,`🏰 ${r.Id}: the dungeon needs a name`);
+    for (const n of r.Scrolls || []) {
+      if (!decorNames.has(n)) add("e","dungeon",r.Id,`🏰 ${r.Name}: scroll “${n}” isn't a 🏡 decoration`);
+      if (scrollAt[n]) add("e","dungeon",r.Id,`🏰 ${r.Name}: “${n}” is also a scroll in ${scrollAt[n]}`);
+      scrollAt[n] = r.Name;
+    }
+    if (!(r.Scrolls || []).length) add("w","dungeon",r.Id,`🏰 ${r.Name}: no furniture scrolls (the boss chest gives coins instead)`);
   }
   for (const l of HL) if (!MATERIALS.includes(l.Material || "SmoothPlastic")) add("e","herolooks",l.Id,`🎨 ${l.Id}: unknown material`);
   const SK = S.data.skills, byId = Object.fromEntries(SK.map(s => [s.Id, s]));
@@ -600,7 +707,7 @@ function renderList(){
     if (q && !JSON.stringify(it).toLowerCase().includes(q)) return;
     if (S.rar && it.Rarity !== S.rar) return;
     for (const t of S.tagFilter) if (!(it.Tags||[]).includes(t)) return;
-    if (T.group && !so.by && it[T.group] !== lastGroup) { lastGroup = it[T.group]; html += `<div class="sect">${esc(lastGroup)}</div>`; }
+    if (T.group && !so.by && it[T.group] !== lastGroup) { lastGroup = it[T.group]; html += `<div class="sect">${esc(T.groupLabel?.[lastGroup] ?? lastGroup)}</div>`; }
     const col = RAR[it.Rarity] || it.Color || "#ddd";
     const ms = modelState(T, it);
     const bad = S.errors.some(e => e.tab === S.tab && e.id === id && e.level === "e");
@@ -671,6 +778,17 @@ function fieldHtml(T, it, f, fi){
     }
     case "text": case "emoji": return `<input type="text" ${a} value="${esc(v ?? "")}"${f.type==="emoji"?` style="font-size:22px;max-width:120px"`:""}>`;
     case "number": return `<input type="number" ${a} value="${v ?? ""}" step="${f.step ?? "any"}"${f.min!==undefined?` min="${f.min}"`:""}${f.max!==undefined?` max="${f.max}"`:""}${f.optional?` placeholder="(none)"`:""}>`;
+    case "pct": return `<input type="number" ${a} value="${typeof v === "number" ? +(v * 100).toFixed(3) : ""}" step="${f.step ?? "any"}"${f.min!==undefined?` min="${f.min}"`:""}${f.max!==undefined?` max="${f.max}"`:""}${f.optional?` placeholder="0"`:""}>`;
+    case "checks": {
+      const have = v || [];
+      return `<div class="tagbox">${f.options(it).map(k => `<label class="toggle" style="margin-right:14px"><input type="checkbox" ${a} data-sub="${esc(k)}"${have.includes(k) ? " checked" : ""}> ${esc(k)}</label>`).join("")}</div>`;
+    }
+    case "namelist": {
+      const names = (S.data.decor||[]).map(d => d.Name), list = v || [];
+      return list.map((n, i) => `<div class="row" style="margin-bottom:6px"><select ${a} data-i="${i}">${names.includes(n) ? "" : `<option value="${esc(n)}" selected>❌ ${esc(n)} (missing)</option>`}${opts(names, n)}</select>
+        <button class="btn red small" style="flex:0 0 auto" data-delname="${i}" title="Remove">🗑</button></div>`).join("") +
+        `<button class="btn blue small" id="addName">＋ Add scroll</button>`;
+    }
     case "select": return `<select ${a}>${opts(typeof f.options === "function" ? f.options(it) : f.options, v ?? "")}</select>`;
     case "from": {
       const have = fromOf(it, S.tab);
@@ -770,7 +888,18 @@ function wire(T, it){
         soft();
         return;
       }
-      if (f.type === "number") {
+      if (f.type === "checks") {
+        const set = new Set(it[f.key] || []);
+        if (el.checked) set.add(sub); else set.delete(sub);
+        it[f.key] = f.options(it).filter(k => set.has(k));
+        soft();
+        return;
+      }
+      if (f.type === "namelist") { it[f.key][+el.dataset.i] = el.value; renderDetail(); soft(); return; }
+      if (f.type === "pct") {
+        if (el.value === "" && f.optional) delete it[f.key];
+        else it[f.key] = el.value === "" ? NaN : +(+el.value / 100).toFixed(6);
+      } else if (f.type === "number") {
         if (el.value === "" && f.optional) delete it[f.key];
         else it[f.key] = el.value === "" ? NaN : +el.value;
       } else if (f.type === "bool") { if (el.checked) it[f.key] = true; else delete it[f.key]; rerender = true; }
@@ -800,13 +929,16 @@ function wire(T, it){
       if (f.type === "say" || f.type === "scale" || f.key === "Per" || f.key === "Max") {
         const p = $("sayPrev"); if (p) p.innerHTML = Array.from({length: it.Max || 1}, (_, i) => `<b>Rank ${i + 1}:</b> ${esc(sayText(it, i + 1))}`).join("<br>");
       }
-      el.classList.toggle("bad", f.type === "number" && el.value === "" && !f.optional);
+      el.classList.toggle("bad", (f.type === "number" || f.type === "pct") && el.value === "" && !f.optional);
       if (rerender) renderDetail();
       soft();
     });
   }
   for (const c of box.querySelectorAll("[data-tag]")) c.onclick = () => toggleTag(it, c.dataset.tag);
   for (const b of box.querySelectorAll("[data-delstep]")) b.onclick = () => { it.Steps.splice(+b.dataset.delstep, 1); renderDetail(); soft(); };
+  for (const b of box.querySelectorAll("[data-delname]")) b.onclick = () => { const f = T.fields.find(x => x.type === "namelist"); it[f.key].splice(+b.dataset.delname, 1); renderDetail(); soft(); };
+  const an = $("addName");
+  if (an) an.onclick = () => { const f = T.fields.find(x => x.type === "namelist"); it[f.key] = it[f.key] || []; it[f.key].push((S.data.decor||[])[0]?.Name || ""); renderDetail(); soft(); };
   const as = $("addStep");
   if (as) as.onclick = () => { it.Steps = it.Steps || []; it.Steps.push({Name: "New Bonus", Pieces: 2, Pwr: 0.05}); renderDetail(); soft(); };
   const nt = $("newTag");

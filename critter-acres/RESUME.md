@@ -936,3 +936,21 @@ Pushed by line splice (Studio's old copies differed from local only by these cha
 - **Checksums (Studio = local):** HeroGear.server 29748/418064, HeroGear.client 21846/777170, Combat 54108/439038, CritterData 130020/191104.
 - **Next:** 3D models for the 5 set weapons; maybe slot bonus numbers / craft costs / dungeon numbers in the editor; scroll decoration shapes.
 
+
+## ⚙️ Editor: Gear numbers + 🏰 Dungeon numbers tabs (2026-11-19, IN STUDIO, verified; NOT playtested)
+- **New editor tabs** (fixed rows, no add/delete; rows grouped by `Group`, header names from `T.groupLabel`):
+  - ⚙️ Gear numbers (`editor/data/herotune.json`): Group Slot (HP/Def/Spd per rarity step, CostX = Workbench cost ×), Rarity (Pwr, MaxedCoins),
+    Craft (Leaf/Stone/Iron Cost), Land (Tiers = looks its land bosses drop, DungeonSet), Chance (Boss, Dungeon, SetWeapon, WeaponLands,
+    WeaponDungeons), General (DefCap, MaxStars, StarBonus, CraftReach).
+  - 🏰 Dungeons (`editor/data/dungeon.json`): Group Tier (Star1-3: all Data.Dungeon.Tiers fields), Land (theme Name/Icon, ChestCoins, Scrolls =
+    decoration names), Reward (chest x / capsule chances, rock hold, runaway, ScrollChance, ScrollDoneCoins, FirstClearX, Score1-3 = ScoreBonus).
+  - New field types: `pct` (shown as %, stored as 0-1), `checks` (checkbox list from an options function), `namelist` (rows of decoration selects).
+    Number checks now also enforce `max` and whole numbers for step-1 fields. The 🔨 Workbench check uses the Craft rows instead of a fixed list.
+  - Map-shape numbers (Gap, ClearR, WallH, themes' materials, zones) are NOT in the editor on purpose (easy to break the generator).
+- **ApplyGameData** (Studio hook + editor/CritterData.apply.lua) builds G.herotune / G.dungeon and changes the Data tables IN PLACE
+  (HeroSlotBonus, HeroSlotCostMult, HeroGearPwr, HeroGearMaxedCoins, HeroGearCraft, HeroGearDrop, WeaponDrop, HeroDefCap/MaxStars/StarBonus/CraftReach,
+  Dungeon.Tiers/ChestCoins/Scrolls/Themes Name+Icon/reward keys/ScoreBonus) and rebuilds `Data.ScrollLandOf`. Tier Size clamps 2-8, Zones 1-4.
+- CritterEditor.ps1 `$names` + plugin CATS include herotune / dungeon (**restart the helper window**; installed plugin copied).
+  A test pull (current GameData + the 2 new files with a few changed numbers) on a CritterData clone loaded and applied the changes.
+- **Checksums (Studio = local):** CritterData 135906/666448 (apply fn 15572/244830 = editor/CritterData.apply.lua up to `Data.GameDataOn = true\nend\n`).
+- **Next:** 3D models for the 5 set weapons; scroll decoration shapes; dungeon stage 4.

@@ -1,6 +1,6 @@
 -- 🛠 Critter Editor (critter-acres/editor): the CritterSync plugin writes the editor's JSON into the child
 -- ModuleScript CritterData.GameData. When it is there, it REPLACES weapons, pets, eggs (+ egg shop tiers),
--- capsules, the skill numbers/texts, decorations (cost, icon, effect) and 🛡️ hero gear (pieces, sets + named bonus steps, looks) above. Everything is built first and only swapped in if it all worked,
+-- capsules, the skill numbers/texts, decorations (cost, icon, effect), 🛡️ hero gear (pieces, sets + named bonus steps, looks), ⚙️ gear numbers and 🏰 dungeon numbers. Everything is built first and only swapped in if it all worked,
 -- so a bad file just leaves the Lua tables above in use (with a warning).
 -- Deleted weapons/pets stay in WeaponByName/SpeciesByName (players may own them) but never drop/hatch again.
 function Data.ApplyGameData(json)
@@ -183,6 +183,79 @@ function Data.ApplyGameData(json)
 		new.HeroGear, new.HeroGearByName = list, by
 	end
 
+	-- ⚙️ Gear numbers (editor tab): slot bonuses, power by rarity, Workbench costs, which bosses drop what
+	local function pos(v) v = tonumber(v) return (v and v > 0) and v or nil end
+	if G.herotune then
+		local t = {SlotBonus = {}, SlotCost = {}, Pwr = {}, Maxed = {}, Craft = {}, Lands = {}, DungeonSet = {}}
+		local setsNow, looksNow = new.HeroSets or Data.HeroSets, new.HeroLooks or Data.HeroLooks
+		for _, r in G.herotune do
+			local id = r.Id
+			if r.Group == "Slot" then
+				assert(Data.HeroSlotById[id] and id ~= "MainHand", "gear numbers: bad slot " .. tostring(id))
+				t.SlotBonus[id] = {HP = pos(r.HP), Def = pos(r.Def), Spd = pos(r.Spd)}
+				t.SlotCost[id] = pos(r.CostX) or 1
+			elseif r.Group == "Rarity" then
+				assert(Data.WeaponRarityByName[id], "gear numbers: bad rarity " .. tostring(id))
+				t.Pwr[id] = assert(tonumber(r.Pwr), "gear numbers: " .. id .. " needs a power number")
+				t.Maxed[id] = tonumber(r.MaxedCoins) or 0
+			elseif r.Group == "Craft" then
+				assert(looksNow[id], "gear numbers: no gear look called " .. tostring(id))
+				local cost = {}
+				for res, n in type(r.Cost) == "table" and r.Cost or {} do
+					if (tonumber(n) or 0) > 0 then cost[res] = math.floor(tonumber(n)) end
+				end
+				t.Craft[id] = cost
+			elseif r.Group == "Land" then
+				local tiers = {}
+				for _, x in type(r.Tiers) == "table" and r.Tiers or {} do
+					assert(looksNow[x], "gear numbers: " .. tostring(id) .. ": unknown look " .. tostring(x))
+					table.insert(tiers, x)
+				end
+				t.Lands[id] = tiers
+				local ds = (type(r.DungeonSet) == "string" and r.DungeonSet ~= "") and r.DungeonSet or nil
+				assert(not ds or setsNow[ds], "gear numbers: " .. tostring(id) .. ": unknown set " .. tostring(ds))
+				t.DungeonSet[id] = ds or false
+			elseif r.Group == "Chance" then
+				t.Chance = r
+			elseif r.Group == "General" then
+				t.General = r
+			end
+		end
+		new.HeroTune = t
+	end
+
+	-- 🏰 Dungeon numbers (editor tab): ⭐ tiers, each dungeon's name / chest coins / furniture scrolls, rewards
+	local TIER_KEYS = {"Size", "Loops", "Mobs", "Depth", "Chests", "Loot", "Zones", "Ledges", "Route", "Obby", "Pads", "Hidden", "Runaway", "Par"}
+	local REWARD_KEYS = {"Energy", "BossChestX", "ChestCapsule", "SilverX", "SilverCapsule", "HiddenX", "HiddenCapsule", "RockHold",
+		"RunawayX", "RunawayCapsule", "RunawayHops", "RunawayNear", "ScrollChance", "ScrollDoneCoins", "FirstClearX"}
+	if G.dungeon and Data.Dungeon then
+		local D, t = Data.Dungeon, {Tiers = {}, Lands = {}}
+		for _, r in G.dungeon do
+			if r.Group == "Tier" then
+				local i = tonumber(tostring(r.Id):match("%d+"))
+				assert(i and D.Tiers[i], "dungeon numbers: unknown tier " .. tostring(r.Id))
+				local tier = table.clone(D.Tiers[i])
+				for _, k in TIER_KEYS do
+					if tonumber(r[k]) then tier[k] = tonumber(r[k]) end
+				end
+				for _, k in {"Size", "Depth", "Chests", "Zones", "Ledges", "Route", "Hidden", "Runaway"} do tier[k] = math.max(0, math.floor(tier[k] or 0)) end
+				tier.Size, tier.Zones, tier.Route = math.clamp(tier.Size, 2, 8), math.clamp(tier.Zones, 1, 4), math.max(1, tier.Route)
+				t.Tiers[i] = tier
+			elseif r.Group == "Land" then
+				assert(D.Themes[r.Id], "dungeon numbers: unknown dungeon " .. tostring(r.Id))
+				local scrolls = {}
+				for _, n in type(r.Scrolls) == "table" and r.Scrolls or {} do
+					if type(n) == "string" and n ~= "" then table.insert(scrolls, n) end
+				end
+				t.Lands[r.Id] = {Name = (type(r.Name) == "string" and r.Name ~= "") and r.Name or nil, Icon = (type(r.Icon) == "string" and r.Icon ~= "") and r.Icon or nil,
+					Coins = tonumber(r.ChestCoins), Scrolls = scrolls}
+			elseif r.Group == "Reward" then
+				t.Reward = r
+			end
+		end
+		new.Dungeon = t
+	end
+
 	-- everything built: swap it in
 	if new.Decor then Data.Decor, Data.DecorByName = new.Decor, new.DecorByName end
 	if new.Weapons then Data.Weapons, Data.WeaponByName = new.Weapons, new.WeaponByName end
@@ -198,6 +271,61 @@ function Data.ApplyGameData(json)
 		Data.HeroGear, Data.HeroGearByName = new.HeroGear, new.HeroGearByName
 		for _, g in Data.HeroGear do
 			if not table.find(Data.HeroTierOrder, g.Tier) then table.insert(Data.HeroTierOrder, g.Tier) end
+		end
+	end
+	if new.HeroTune then
+		-- (tables are changed in place: scripts may hold on to them)
+		local t = new.HeroTune
+		for id, b in t.SlotBonus do Data.HeroSlotBonus[id] = b end
+		for id, m in t.SlotCost do Data.HeroSlotCostMult[id] = m end
+		for id, v in t.Pwr do Data.HeroGearPwr[id] = v end
+		for id, v in t.Maxed do Data.HeroGearMaxedCoins[id] = v end
+		if next(t.Craft) then
+			table.clear(Data.HeroGearCraft)
+			for id, c in t.Craft do Data.HeroGearCraft[id] = c end
+		end
+		local drop = Data.HeroGearDrop
+		for id, tiers in t.Lands do drop.Lands[id] = tiers end
+		drop.DungeonSet = drop.DungeonSet or {}
+		for id, ds in t.DungeonSet do drop.DungeonSet[id] = ds or nil end
+		local c = t.Chance
+		if c then
+			drop.Boss = tonumber(c.Boss) or drop.Boss
+			drop.Dungeon = tonumber(c.Dungeon) or drop.Dungeon
+			drop.SetWeapon = tonumber(c.SetWeapon) or drop.SetWeapon
+			Data.WeaponDrop = Data.WeaponDrop or {}
+			Data.WeaponDrop.Lands = tonumber(c.WeaponLands) or Data.WeaponDrop.Lands
+			Data.WeaponDrop.Dungeons = tonumber(c.WeaponDungeons) or Data.WeaponDrop.Dungeons
+		end
+		local g = t.General
+		if g then
+			Data.HeroDefCap = tonumber(g.DefCap) or Data.HeroDefCap
+			Data.HeroGearMaxStars = tonumber(g.MaxStars) or Data.HeroGearMaxStars
+			Data.HeroGearStarBonus = tonumber(g.StarBonus) or Data.HeroGearStarBonus
+			Data.HeroCraftReach = tonumber(g.CraftReach) or Data.HeroCraftReach
+		end
+	end
+	if new.Dungeon then
+		local D, t = Data.Dungeon, new.Dungeon
+		for i, tier in t.Tiers do D.Tiers[i] = tier end
+		for id, l in t.Lands do
+			local th = D.Themes[id]
+			th.Name, th.Icon = l.Name or th.Name, l.Icon or th.Icon
+			if l.Coins then D.ChestCoins[id] = l.Coins end
+			D.Scrolls[id] = l.Scrolls
+		end
+		local r = t.Reward
+		if r then
+			for _, k in REWARD_KEYS do
+				if tonumber(r[k]) then D[k] = tonumber(r[k]) end
+			end
+			D.ScoreBonus = {tonumber(r.Score1) or D.ScoreBonus[1], tonumber(r.Score2) or D.ScoreBonus[2], tonumber(r.Score3) or D.ScoreBonus[3]}
+		end
+		if Data.ScrollLandOf then
+			table.clear(Data.ScrollLandOf)
+			for land, names in D.Scrolls do
+				for _, name in names do Data.ScrollLandOf[name] = land end
+			end
 		end
 	end
 	if Data.FixFrom then Data.FixFrom() end -- (🧭 From on every weapon / piece; Craft follows it)

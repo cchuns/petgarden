@@ -1,0 +1,11 @@
+[
+  {"Id": "Star1", "Group": "Tier", "Icon": "⭐", "Size": 4, "Loops": 0.12, "Mobs": 0.5, "Depth": 0, "Chests": 3, "Loot": 1, "Zones": 3, "Ledges": 1, "Route": 1, "Obby": 0.4, "Pads": 0.3, "Hidden": 1, "Runaway": 1, "Par": 420},
+  {"Id": "Star2", "Group": "Tier", "Icon": "⭐⭐", "Size": 5, "Loops": 0.15, "Mobs": 0.6, "Depth": 1, "Chests": 4, "Loot": 1.6, "Zones": 3, "Ledges": 2, "Route": 2, "Obby": 0.5, "Pads": 0.4, "Hidden": 2, "Runaway": 1, "Par": 600},
+  {"Id": "Star3", "Group": "Tier", "Icon": "⭐⭐⭐", "Size": 6, "Loops": 0.18, "Mobs": 0.7, "Depth": 2, "Chests": 5, "Loot": 2.4, "Zones": 4, "Ledges": 3, "Route": 2, "Obby": 0.6, "Pads": 0.5, "Hidden": 2, "Runaway": 1, "Par": 840},
+  {"Id": "Meadow", "Group": "Land", "Icon": "🟢", "Name": "Slime Cave", "ChestCoins": 40, "Scrolls": ["Slime Lamp", "Bubble Chair", "Glow Shroom"]},
+  {"Id": "Forest", "Group": "Land", "Icon": "🌲", "Name": "Root Tunnels", "ChestCoins": 80, "Scrolls": ["Root Arch", "Firefly Jar", "Acorn Seat"]},
+  {"Id": "Peaks", "Group": "Land", "Icon": "❄️", "Name": "Ice Halls", "ChestCoins": 150, "Scrolls": ["Ice Sculpture", "Snow Globe", "Frost Lantern"]},
+  {"Id": "Caves", "Group": "Land", "Icon": "💎", "Name": "Crystal Mines", "ChestCoins": 260, "Scrolls": ["Geode", "Mine Cart", "Gem Tree"]},
+  {"Id": "Volcano", "Group": "Land", "Icon": "🌋", "Name": "Lava Keep", "ChestCoins": 420, "Scrolls": ["Ember Brazier", "Dragon Statue", "Magma Throne"]},
+  {"Id": "Rewards", "Group": "Reward", "Icon": "🎁", "Energy": 1, "BossChestX": 5, "ChestCapsule": 0.2, "SilverX": 2.5, "SilverCapsule": 0.5, "HiddenX": 2, "HiddenCapsule": 0.4, "RockHold": 1.2, "RunawayX": 3, "RunawayCapsule": 0.6, "RunawayHops": 3, "RunawayNear": 16, "ScrollChance": 0.15, "ScrollDoneCoins": 150, "FirstClearX": 3, "Score1": 1, "Score2": 1.25, "Score3": 1.5}
+]
