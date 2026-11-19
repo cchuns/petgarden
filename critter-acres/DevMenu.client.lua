@@ -104,6 +104,20 @@ PAGES.Hero = function()
 	end
 	table.insert(lands, {"🔓 Open all gates", "Gates"})
 	group("🌀 Go to a land", nil, lands, UDim2.fromOffset(240, 50))
+	-- 🏰 dungeons: jump in (no energy), or open them all
+	local dun = {
+		{"🔓 Open all dungeons", "DungeonsAll", nil, "special", "Every dungeon at every ⭐, no farm level needed, full ⚡"},
+		{"🔒 Reset dungeon stars", "DungeonsReset", nil, "careful", "Back to a new player's dungeons"},
+	}
+	for _, b in Data.Biomes do
+		local th = Data.Dungeon and Data.Dungeon.Themes[b.Name]
+		if th then
+			for tier = 1, #Data.Dungeon.Tiers do
+				table.insert(dun, {("%s %s ⭐%d"):format(th.Icon, th.Name, tier), "Dungeon", b.Name .. ":" .. tier, nil, "Jump straight into a fresh dungeon (no ⚡)"})
+			end
+		end
+	end
+	group("🏰 Dungeons", nil, dun, UDim2.fromOffset(240, 50))
 end
 
 PAGES.Weapons = function()
@@ -111,6 +125,8 @@ PAGES.Weapons = function()
 		{"🗡️ All Melee", "WeaponsOf", "Melee"}, {"🏹 All Range", "WeaponsOf", "Range"}, {"🔮 All Mage", "WeaponsOf", "Magic"},
 		{"✨ Every weapon", "WeaponsOf", nil, "special"}, {"⭐ Max stars in hand", "WeaponStars", nil, "special"},
 		{"🎁 +3 every capsule", "Capsules"},
+		{"🛡️ All hero gear", "HeroGearAll", nil, "go"}, {"🟡 Gold set on", "HeroGearBoss", "Gold", "special"}, {"🔥 Magma set on", "HeroGearBoss", "Magma", "special"},
+		{"👗 All looks", "HeroLooks"}, {"🧹 Clear hero gear", "HeroGearReset", nil, "careful"},
 	})
 	local models = ReplicatedStorage:FindFirstChild("WeaponModels")
 	for _, br in Data.SkillBranches do

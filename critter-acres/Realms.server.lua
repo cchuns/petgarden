@@ -390,6 +390,13 @@ local function portalOut()
 	return out and out.Position or Vector3.new(4, API.GROUND_Y, -40)
 end
 API.travelSpots.TerrainPortal = portalOut()
+-- 🏰 the Dungeon Portal is a stop in the 🌀 portal picker too (just in front of its gate)
+local function dungeonOut()
+	local dp = root:FindFirstChild("DungeonPortal")
+	local out = dp and dp:FindFirstChild("Out")
+	return out and out.Position or nil
+end
+API.travelSpots.DungeonPortal = dungeonOut()
 local pond = root:FindFirstChild("FishingPond")
 if pond then
 	local cf, size = pond:GetBoundingBox()
@@ -874,6 +881,7 @@ end
 local function isOpen(prof, name, player)
 	local g = Data.Gates[name]
 	if not g then return true end
+	if player and player:GetAttribute("DevOpenAll") then return true end -- (Studio dev menu: 🔓 every land + dungeon)
 	if player then return API.farmLevelOf(player) >= g.Level end
 	return (prof.Gates and prof.Gates[name]) == true
 end
@@ -1158,6 +1166,9 @@ end
 ---------------------------------------------------------------- the portal in town (walk in = open the screen, client side)
 local tp = root:WaitForChild("TerrainPortal", 30)
 if tp then API.travelSpots.TerrainPortal = portalOut() end
+task.spawn(function()
+	if root:WaitForChild("DungeonPortal", 30) then API.travelSpots.DungeonPortal = dungeonOut() end
+end)
 
 ---------------------------------------------------------------- players coming and going
 local function hookPlayer(player)
@@ -1204,6 +1215,7 @@ API.DEV_EXTRA.Realm = function(player, prof, name) -- jump straight into a fresh
 	return ("🌀 %s map #%d"):format(run.terrain, run.seed)
 end
 API.DEV_EXTRA.Dungeon = function(player, prof, name, tier) -- jump straight into a fresh dungeon (Studio dev menu), no energy
+	if type(name) == "string" and name:find(":") then name, tier = name:match("^(.-):(%d+)$") end -- (the dev menu sends "Land:tier")
 	local party = partyOf[player] or newParty(player)
 	if party.run then return "Already exploring" end
 	party.terrain = Data.Dungeon.Themes[name or ""] and name or party.terrain
@@ -1213,6 +1225,18 @@ API.DEV_EXTRA.Dungeon = function(player, prof, name, tier) -- jump straight into
 	run.paid[player] = true
 	sendIn(player, run)
 	return "🏰 " .. dungeonName(run.terrain, run.tier)
+end
+API.DEV_EXTRA.DungeonsAll = function(player, prof) -- every dungeon open at every ⭐ (ignores farm level until you leave)
+	prof.DungeonTier = prof.DungeonTier or {}
+	for land in Data.Dungeon.Themes do prof.DungeonTier[land] = #Data.Dungeon.Tiers end
+	player:SetAttribute("DevOpenAll", true)
+	prof.Energy = math.max(prof.Energy or 0, Data.EnergyMax or 0)
+	return ("🔓 All dungeons open, ⭐1-%d"):format(#Data.Dungeon.Tiers)
+end
+API.DEV_EXTRA.DungeonsReset = function(player, prof) -- back to a new player's dungeons
+	prof.DungeonTier = {}
+	player:SetAttribute("DevOpenAll", nil)
+	return "🔒 Dungeon stars reset"
 end
 
 print("[Realms] ready")

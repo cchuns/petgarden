@@ -508,6 +508,7 @@ local PLACES = {
 	{Name = "My island", Icon = "🏡", Info = "Your plots, pets and mailbox", Home = true},
 	{Name = "Plaza", Icon = "⛲", Info = "Market street, boutique, festival green and craft corner"},
 	{Name = "TerrainPortal", Title = "Explorer's Portal", Icon = "🌀", Info = "Explore wild lands, solo or with friends"},
+	{Name = "DungeonPortal", Title = "Dungeon Portal", Icon = "🏰", Info = "Team up (1-4) and beat a dungeon boss"},
 	{Name = "Pond", Title = "Fishing pond", Icon = "🎣", Info = "Next to the Explorer's Portal"},
 }
 local EVENT_INFO = {
@@ -940,10 +941,10 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layoutD
 local dockButtons = {}
 for i, d in {{"Pets", "🐾", "Pets", "Your pets, eggs, nest and gear  ·  key P"}, {"Farm", "🏡", "Farm", "Decorate, plots, bag and toys  ·  bag: key B"},
 	{"World", "🗺️", "World", "Travel, friends' farms, fish and events  ·  map: key M"}, {"Shop", "🛒", "Shop", "Seeds and seed packs"},
-	{"Weapons", "⚔️", "Weapons", "Your weapons and 🎁 capsules  ·  key G"}, {"Skills", "🌳", "Skills", "Your skill tree: 1 point per ⚔️ Hero Level  ·  key K"}} do
+	{"Weapons", "🛡️", "Gear", "Your gear, weapons and 🎁 capsules  ·  key G"}, {"Skills", "🌳", "Skills", "Your skill tree: 1 point per ⚔️ Hero Level  ·  key K"}} do
 	dockButtons[d[1]] = K.iconButton(dock, d[2], d[3], {Size = UDim2.fromOffset(84, 74), LayoutOrder = i, Tip = d[2] .. " " .. d[3], TipText = d[4]},
 		function()
-			if d[1] == "Weapons" then bridge:Fire("Weapons") return end -- (StarterPlayerScripts.Combat)
+			if d[1] == "Weapons" then bridge:Fire("Gear") return end -- (StarterPlayerScripts.HeroGear)
 			if d[1] == "Skills" then bridge:Fire("Skills") return end -- (StarterPlayerScripts.SkillTree)
 			openWin(d[1])
 		end)

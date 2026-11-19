@@ -761,7 +761,7 @@ CK's choices: it's a new portal called "Dungeon Portal", separate from the old R
   - CritterData is 95715/443312 (Data.Dungeon + the decor hook) and still loads.
   - FarmServer got a one-line edit (`API.updateEnergy`) and is 144296/910095; the local copy is drifted.
 - **The town model:** `CritterAcres.DungeonPortal` is at (−35, 2.84, −76), facing +Z, between the Explorer's Portal and the Raid Gate. It's a stone gate with two towers, flags and a purple/gold swirl, with `Gate` (walk-in trigger) and `Out` 12 studs in front. It has a TownChips chip 🏰 "Dungeon Portal". Three flower clumps were moved off its pad.
-- **Still to do:** a Dev menu button (`API.DEV_EXTRA.Dungeon(player, prof, land, tier)` already exists).
+- **Dev menu:** done 2026-11-19 (see "Dungeon Portal stop + dungeon dev buttons" below).
 - **Later stages:**
   - 3: hidden chests behind breakable walls, a runaway chest, unique boss gear sets (2-piece bonus + glow), 📜 furniture scrolls (unlock dungeon-only decorations, scroll album, guaranteed drop), ⭐ run score, first-clear bonus.
   - 4: puzzles (torches, colour tiles, push block), levers that open secret rooms, a buddy pet that sniffs out treasure, a minimap that fills in as you explore (fog) with a glowing trail back, cute traps (slime puddles, bounce pads, snowballs), the boss's halfway trick (calls helpers).
@@ -884,3 +884,12 @@ Pushed by line splice (Studio's old copies differed from local only by these cha
   So the weapon shows in town and on the farm; gear (HeroGearLook) already showed everywhere.
 - HeroGear.client: the Gear avatar rebuilds (0.2 s debounce) whenever HeroGearLook / WeaponBack / a Tool is added to or removed from your
   character while the window is open (it used to rebuild once after a fixed 0.45 s, which could beat the server's re-dress).
+
+## 🏰 Dungeon Portal stop + dungeon dev buttons (2026-11-19, IN STUDIO, verified by length + checksum + compile)
+- **🌀 Portal picker / World (M) Places:** new row 🏰 "Dungeon Portal" (CritterMenus PLACES, after the Explorer's Portal).
+  Realms sets `API.travelSpots.DungeonPortal` = `CritterAcres.DungeonPortal.Out` (−35, 3.4, −64), so PortalGo "Place" → Travel works.
+- **Dev menu (Hero tab) "🏰 Dungeons":** 🔓 Open all dungeons (`DEV_EXTRA.DungeonsAll`: DungeonTier = max for every land, full ⚡,
+  player attribute `DevOpenAll` makes Realms `isOpen` ignore farm level until you leave), 🔒 Reset dungeon stars (`DungeonsReset`),
+  and a jump button per dungeon per ⭐ (`DEV_EXTRA.Dungeon` now also takes "Land:tier" in one arg; no energy).
+- **Mirrors re-synced:** Studio's DevMenu (hero gear buttons) and CritterMenus (dock 🛡️ Gear) had edits the local files lacked; both local files now equal Studio.
+- **Checksums:** Realms 54518/449041, DevMenu 12741/63085, CritterMenus 61336/992786 (all = local).

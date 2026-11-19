@@ -134,7 +134,8 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [ ] **Playtest v3 first** (map building is brand new and has never run)
 - [ ] Stage 3 (next, recommended order): ⚔️ boss gear sets (2-piece bonus + glow), 📜 furniture scrolls → dungeon-only decorations (🧱 placeholders, then shapes) + a scroll album + a guaranteed drop, 🙈 hidden chests (push-through bushes, breakable cracked rock), 🏃 runaway chest, ⭐ run score, 🎉 first-clear bonus
 - [ ] Stage 4: easy puzzles (torches, colour tiles, push block), levers / secret spots, a 🐾 buddy pet that sniffs out chests, a 🗺️ minimap that fills in + a glowing trail home, cute traps (slime puddles, bounce pads, snowballs), the boss calls helpers halfway
-- [ ] Small: Dev menu "jump into dungeon X ⭐N" button (`API.DEV_EXTRA.Dungeon` exists); check the CritterSync plugin shows after a Studio restart; build real shapes for any 🧱 placeholder decorations CK adds
+- [x] Dev menu: jump into dungeon X ⭐N + 🔓 open all dungeons; 🏰 Dungeon Portal stop in the portal picker
+- [ ] Small: check the CritterSync plugin shows after a Studio restart; build real shapes for any 🧱 placeholder decorations CK adds
 
 ## 🛡️ Hero Gear (CK, 2026-11-19): player slots built first, dungeon paused
 - [x] 6 slots: head, body, legs, boots, main hand (weapon), off hand. Crafted low tiers, boss-only high tiers. Gear shows on the character; a cosmetic look overrides it.
