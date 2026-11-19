@@ -138,6 +138,43 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [x] Dev menu: jump into dungeon X ⭐N + 🔓 open all dungeons; 🏰 Dungeon Portal stop in the portal picker
 - [ ] Small: check the CritterSync plugin shows after a Studio restart; build real shapes for any 🧱 placeholder decorations CK adds
 
+### 🧩 Stage 4: what's in it (2026-11-19, in Studio, NOT playtested)
+- 🧩 Puzzles in quiet clearings, each gives a 🧩 Puzzle chest: 🔥 light 3 torches / 🎨 step on colour tiles in the post's order
+  (top to bottom, a wrong step starts over) / 📦 push the box onto the switch (🔄 on the switch puts it back)
+- 🔘 Lever doors: pull a lever, a stone door in the cliff slides down, secret chest behind it
+- 🌟 Secret spots: a twinkling star at a clearing's edge, coins once each
+- Cute traps on the trails (never hurt): 🟢 sticky puddles (slow for a moment), 🦘 bounce pads, rolling balls that bonk you
+  back (⛄ snowballs in Ice Halls; slime balls / acorns / crystal balls / ash balls elsewhere)
+- 🗺️ Minimap on the left: fills in as you explore, 🏠 🔥 🗝️ 👑 marks, you blue / party green, ➖ folds it;
+  🐾 Sniff = paw prints to the nearest unopened chest (every 20 s, buddy shows 👃); 🏠 Way home = glowing trail to the start
+- 👑 Boss calls helpers at half HP
+- Per tier (⭐1 / ⭐2 / ⭐3): puzzles 1/1/2, levers 0/1/1, secret spots 1/2/2, traps 3/5/7, helpers 1/2/3 (all in the editor's 🏰 Dungeons tab)
+
+### 🧩 Stage 4: CK's playtest checklist (Dev menu 🏰 jump, ⭐2 has everything)
+- [ ] Minimap starts empty, fills in as you walk, your dot moves; it doesn't cover anything else on screen
+- [ ] 🐾 Sniff: paw prints lead to a chest; pressing again right away says to wait
+- [ ] 🏠 Way home: glowing dots lead back to the start
+- [ ] Puzzles (🔥 / 🎨 / 📦 sign): solving pops a chest; get the box stuck once and try 🔄
+- [ ] 🔘 Lever: pull it, a nearby stone door slides down with a chest behind it
+- [ ] Traps: puddle slows then speed comes back; pink pad bounces; rolling ball bonks with no damage
+- [ ] Boss calls helpers at half HP (📣)
+- [ ] Least sure without a playtest: bounce height vs the invisible ceiling, how box pushing feels, puddle slow vs 👟 boots / Quick Feet speed
+
+### 🏰 More dungeon ideas (Claude's suggestions 2026-11-19, NOT approved yet)
+- [ ] 🐣 Rescue a lost baby critter in a cage → it gives a 🥚 dungeon egg (pets still only from eggs)
+- [ ] 🤝 Team plates: two pads that need two players (or a player + buddy pet) standing on them at once
+- [ ] 🗝️ Mini-boss guarding the key (a bigger, special mob with a crown)
+- [ ] 🧭 Treasure map pieces: find 3 in a run → a bonus vault room opens
+- [ ] 🛒 A friendly mole merchant at a campfire: snacks / heal / a sniff refill for 💰
+- [ ] ✨ A golden runaway critter mob: hard to catch, drops lots of coins
+- [ ] 🧊 Land-themed fun: ice slides in Ice Halls, mushroom trampolines in Root Tunnels, crystal mirrors to aim light in Crystal Mines
+- [ ] 🎲 Weekly twist: "Bouncy week" (more pads), "Lantern night" (darker, more lanterns), "Chest rush" (more chests)
+- [ ] ⭐4 / ⭐5 tiers (bigger maps, all puzzle kinds, boss with 2 phases)
+- [ ] 📖 Dungeon sticker book: a sticker for each puzzle kind, boss, secret spot, 3-star run
+- [ ] 🏆 Fastest-clear board per dungeon (friends / server)
+- [ ] 💖 Revive a fainted friend by standing next to them (no waiting at the campfire)
+- [ ] 🗺️ Minimap shows chests you've seen and puzzles you've solved
+
 ## 🛡️ Hero Gear (CK, 2026-11-19): player slots built first, dungeon paused
 - [x] 6 slots: head, body, legs, boots, main hand (weapon), off hand. Crafted low tiers, boss-only high tiers. Gear shows on the character; a cosmetic look overrides it.
 - [ ] CK playtests: crafting, wearing, the look on the avatar, PWR/HP changes, boss drops
