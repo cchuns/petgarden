@@ -21,14 +21,32 @@ Data.Dungeon = {
 	BossChestX = 5, -- the 🎁 boss chest has this many times more coins
 	ChestCapsule = 0.2, -- chance a 🧺 chest also has a capsule (the boss chest always does)
 	SilverX = 2.5, SilverCapsule = 0.5, -- ✨ a ledge's silver chest: coins x this, chance of a capsule
+	-- 🙈 hidden chests sit in a little nook in the cliff behind a bush you can walk through or a cracked rock you break
+	HiddenX = 2, HiddenCapsule = 0.4, -- coins x this, chance of a capsule
+	RockHold = 1.2, -- ⛏️ seconds to hold the button to break a cracked rock
+	-- 🏃 the runaway chest hops away when someone comes close, then gets tired and can be opened
+	RunawayX = 3, RunawayCapsule = 0.6, RunawayHops = 3, RunawayNear = 16,
+	-- 📜 furniture scrolls: the 🎁 boss chest always has one you don't have yet; hidden / silver / runaway chests sometimes
+	ScrollChance = 0.15, ScrollDoneCoins = 150, -- (all found: coins instead, x the tier's Loot)
+	Scrolls = {
+		Meadow = {"Slime Lamp", "Bubble Chair", "Glow Shroom"},
+		Forest = {"Root Arch", "Firefly Jar", "Acorn Seat"},
+		Peaks = {"Ice Sculpture", "Snow Globe", "Frost Lantern"},
+		Caves = {"Geode", "Mine Cart", "Gem Tree"},
+		Volcano = {"Ember Brazier", "Dragon Statue", "Magma Throne"},
+	},
+	-- ⭐ run score (when the boss falls): ⭐ cleared, ⭐ beat the Par time (seconds, per tier), ⭐ found half the chests
+	ScoreBonus = {1, 1.25, 1.5}, -- 🎁 boss chest coins x this for 1 / 2 / 3 stars
+	FirstClearX = 3, -- 🎉 first time you clear a dungeon at a ⭐ tier: bonus coins = boss chest coins x this, plus a capsule
 	-- Size = clearings per side, Loops = extra trails (more ways through), Mobs = chance a clearing has mobs,
 	-- Depth = extra mob levels (0-2), Chests = 🧺 chests, Loot = chest coin multiplier,
 	-- Zones = how many 🎨 areas, Ledges = 🪜 ledge routes, Route = clearings between the way up and the ledge,
 	-- Obby = chance the way up is 🦘 jump pads (else stone steps), Pads = chance a crossing is jump pads (else a bridge)
+	-- Hidden = 🙈 hidden chests, Runaway = 🏃 runaway chests, Par = ⭐ time goal in seconds
 	Tiers = {
-		{Size = 4, Loops = 0.12, Mobs = 0.5, Depth = 0, Chests = 3, Loot = 1, Zones = 3, Ledges = 1, Route = 1, Obby = 0.4, Pads = 0.3},
-		{Size = 5, Loops = 0.15, Mobs = 0.6, Depth = 1, Chests = 4, Loot = 1.6, Zones = 3, Ledges = 2, Route = 2, Obby = 0.5, Pads = 0.4},
-		{Size = 6, Loops = 0.18, Mobs = 0.7, Depth = 2, Chests = 5, Loot = 2.4, Zones = 4, Ledges = 3, Route = 2, Obby = 0.6, Pads = 0.5},
+		{Size = 4, Loops = 0.12, Mobs = 0.5, Depth = 0, Chests = 3, Loot = 1, Zones = 3, Ledges = 1, Route = 1, Obby = 0.4, Pads = 0.3, Hidden = 1, Runaway = 1, Par = 420},
+		{Size = 5, Loops = 0.15, Mobs = 0.6, Depth = 1, Chests = 4, Loot = 1.6, Zones = 3, Ledges = 2, Route = 2, Obby = 0.5, Pads = 0.4, Hidden = 2, Runaway = 1, Par = 600},
+		{Size = 6, Loops = 0.18, Mobs = 0.7, Depth = 2, Chests = 5, Loot = 2.4, Zones = 4, Ledges = 3, Route = 2, Obby = 0.6, Pads = 0.5, Hidden = 2, Runaway = 1, Par = 840},
 	},
 	-- terrain: Ground / Path / Cliff / Top (cliff tops) / Ceil (cave ceiling) materials; Edge = props along the edges
 	-- (bushes, rocks, crystals: names from ServerStorage.RealmProps / IslandProps), Trees = props on the cliff tops,
@@ -100,4 +118,13 @@ Data.Dungeon = {
 		},
 	},
 }
+-- 📜 which dungeon (land) a decoration's scroll comes from; nil = a normal decoration
+Data.ScrollLandOf = {}
+for land, names in Data.Dungeon.Scrolls do
+	for _, name in names do Data.ScrollLandOf[name] = land end
+end
+-- is this decoration still locked for someone with these scrolls ({[name] = true})?
+function Data.DecorLocked(name, scrolls)
+	return Data.ScrollLandOf[name] ~= nil and not (scrolls and scrolls[name])
+end
 

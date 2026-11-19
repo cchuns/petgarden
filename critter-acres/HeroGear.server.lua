@@ -407,6 +407,9 @@ API.heroGearDrop = function(land, dungeon)
 	if math.random() >= chance then return nil end
 	local tiers = Data.HeroGearDrop.Lands[land] or Data.HeroGearDrop.Lands.Meadow
 	local tier = tiers[math.random(#tiers)]
+	-- 🏰 a dungeon boss drops a piece of that dungeon's own set
+	local own = dungeon and Data.HeroGearDrop.DungeonSet and Data.HeroGearDrop.DungeonSet[land]
+	if own then tier = own end
 	local pool = {}
 	for _, def in Data.HeroGear do
 		if def.Tier == tier and not def.Craft then table.insert(pool, def.Name) end

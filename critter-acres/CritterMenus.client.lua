@@ -445,6 +445,7 @@ RENDER.Farm = function()
 			Fn = function() viaBridge("Decorate") end})
 		local g = K.grid(body, UDim2.fromOffset(150, 200), 1)
 		for i, d in Data.Decor do
+			if Data.DecorLocked and Data.DecorLocked(d.Name, craftInfo.Scrolls) and ((craftInfo.DecorInv or {})[d.Name] or 0) == 0 then continue end -- (📜 not found yet)
 			local n = (craftInfo.DecorInv or {})[d.Name] or 0
 			local can, why = have(d.Cost)
 			local btn, fn

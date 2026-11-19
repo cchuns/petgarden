@@ -108,6 +108,9 @@ PAGES.Hero = function()
 	local dun = {
 		{"🔓 Open all dungeons", "DungeonsAll", nil, "special", "Every dungeon at every ⭐, no farm level needed, full ⚡"},
 		{"🔒 Reset dungeon stars", "DungeonsReset", nil, "careful", "Back to a new player's dungeons"},
+		{"📜 All scrolls", "Scrolls", nil, "go", "Unlock every dungeon decoration"},
+		{"📜 Clear scrolls", "ScrollsReset", nil, "careful"},
+		{"🟢 Slime set on", "HeroGearBoss", "Slime"}, {"🐉 Dragon set on", "HeroGearBoss", "Dragon", "special"},
 	}
 	for _, b in Data.Biomes do
 		local th = Data.Dungeon and Data.Dungeon.Themes[b.Name]

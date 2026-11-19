@@ -141,7 +141,7 @@ local function craftInfo(player, prof)
 			Odds = Data.UpgradeOdds(g), Text = Data.GearText(g), Name = Data.GearName(g), WornBy = wornBy})
 	end
 	return {Res = prof.Res, Tool = toolOf(prof), Gear = gear, DecorInv = prof.DecorInv, DecorCount = #prof.Decor, PlotsOpen = prof.PlotsOpen,
-		Soil = prof.Soil, Toys = prof.Toys}
+		Soil = prof.Soil, Toys = prof.Toys, Scrolls = prof.Scrolls or {}}
 end
 function ACTIONS.CraftInfo(player, prof) return craftInfo(player, prof) end
 
@@ -288,6 +288,7 @@ end
 function ACTIONS.BuyDecor(player, prof, name)
 	local def = Data.DecorByName[name]
 	if not def then return {Error = "❌"} end
+	if Data.DecorLocked and Data.DecorLocked(name, prof.Scrolls) then return {Error = "📜 Find its scroll in a 🏰 dungeon first!"} end
 	local ok, missing = API.pay(player, prof, def.Cost)
 	if not ok then return {Error = "Need more " .. missing} end
 	prof.DecorInv[name] = (prof.DecorInv[name] or 0) + 1

@@ -14,6 +14,9 @@
 --   * 🗝️ the key in the farthest side clearing, guarded; it opens the boss gate (vines / ice / crystal) for everyone
 --   * 👑 the boss in a big round arena behind the gate; beating it brings the 🎁 boss chest + a way home
 --   * 🧺 chests at the end of dead-end trails (each explorer opens each one once)
+--   * 🙈 hidden chests in little nooks in the cliff, behind a bush you walk through or a cracked rock you break (⛏️ hold)
+--   * 🏃 a runaway chest with googly eyes: it hops away down the trails when you come close, then gets tired
+--   * 📜 scrolls / ⭐ run score / 🎉 first-clear bonus: ServerScriptService.DungeonRewards (API.dungeonScroll, API.dungeonCleared)
 -- Walls block things: run.blocked(a, b) tells Combat when terrain / the gate is in the way (no attacks, shots or
 -- noticing through it) and run.clampGoal keeps every mob inside its own clearing.
 -- All tuning lives in Data.Dungeon (CritterData). Mobs come from ServerStorage.MobModels.<Land> like the lands.
@@ -463,6 +466,39 @@ local function build(run)
 	-- how far a spot is from open ground (negative = on a clearing / trail), and which clearing is nearest
 	local allNodes = {}
 	for _, nd in node do table.insert(allNodes, nd) end
+	-- 🙈 hidden nooks: a little hollow in the cliff at a clearing's edge (part of the open ground, but not a clearing)
+	local nooks = {}
+	do
+		local cands = {}
+		for c = 1, n * n do
+			if c ~= start and c ~= keyCell and not onRoute[c] and not table.find(fires, c) then table.insert(cands, c) end
+		end
+		for i = #cands, 2, -1 do local j = rng:NextInteger(1, i) cands[i], cands[j] = cands[j], cands[i] end
+		for _, c in cands do
+			if #nooks >= (tier.Hidden or 0) then break end
+			local nd = node[c]
+			for _ = 1, 12 do
+				local a = rng:NextNumber(0, math.pi * 2)
+				local dir = Vector2.new(math.cos(a), math.sin(a))
+				local ctr = nd.p + dir * (nd.r + 3)
+				local ok = true
+				for _, o in allNodes do
+					if o ~= nd and (ctr - o.p).Magnitude - o.r < 9 then ok = false break end
+				end
+				if ok then
+					for _, sg in segs do
+						if distSeg(ctr, sg[1], sg[2]) - sg[3] < 7 then ok = false break end
+					end
+				end
+				if ok then
+					local nk = {p = ctr, r = 5, c = "Nook", home = nd, dir = dir}
+					table.insert(nooks, nk)
+					table.insert(allNodes, nk)
+					break
+				end
+			end
+		end
+	end
 	local function field(p, nl, sl)
 		local dClear, near = math.huge, nil
 		for _, nd in nl or allNodes do
@@ -501,6 +537,7 @@ local function build(run)
 		local z = zoneOf[c]
 		zoneGround[nd] = (z and z.Ground) or th.Ground
 	end
+	for _, nk in nooks do zoneGround[nk] = zoneGround[nk.home] or th.Ground end
 
 	-- ⛰️ write the terrain in strips (cheap enough: only the trails / clearings near each strip are checked)
 	local H, Dm = {}, {} -- per column: surface height, distance to open ground (kept for placing things later)
@@ -623,8 +660,8 @@ local function build(run)
 		for s = 1, steps do
 			local a = s / steps * math.pi * 2 + rng:NextNumber(-0.15, 0.15)
 			local p2 = nd.p + Vector2.new(math.cos(a), math.sin(a)) * (nd.r + rng:NextNumber(0.5, 2.5))
-			local _, dPath = field(p2)
-			if dPath > 3 and rng:NextNumber() < 0.75 then edgeProp(p2, 0.9, 1.5) end
+			local dAll, dPath = field(p2)
+			if dPath > 3 and dAll > 0.3 and rng:NextNumber() < 0.75 then edgeProp(p2, 0.9, 1.5) end
 		end
 	end
 	for _, tr in trails do
@@ -968,6 +1005,10 @@ local function build(run)
 			if prof then
 				prof.DungeonTier = prof.DungeonTier or {}
 				local best = prof.DungeonTier[land] or 0
+				if API.dungeonCleared then -- ⭐ run score + 🎉 first-clear bonus (DungeonRewards)
+					local ok, err = pcall(API.dungeonCleared, run, p, (run.tier or 1) > best)
+					if not ok then warn("[Dungeons] score: " .. tostring(err)) end
+				end
 				if (run.tier or 1) > best then
 					prof.DungeonTier[land] = run.tier or 1
 					if (run.tier or 1) < #D.Tiers then
@@ -1004,6 +1045,129 @@ local function build(run)
 		run.makeChest(CFrame.lookAt(pos, Vector3.new(O.X + nd.p.X, pos.Y, O.Z + nd.p.Y)), "Wood")
 	end
 
+	-- 🙈 hidden chests: in each nook, behind a bush you walk through or a cracked rock you break
+	for i, nk in nooks do
+		local fwd = Vector3.new(nk.dir.X, 0, nk.dir.Y)
+		local inside = W(nk.p + nk.dir * 1.5)
+		local mouth = W(nk.home.p + nk.dir * (nk.home.r + 0.5))
+		run.makeChest(CFrame.lookAt(inside, Vector3.new(mouth.X, inside.Y, mouth.Z)), "Hidden")
+		local face = CFrame.lookAt(mouth, mouth + fwd) -- -Z points into the nook
+		if (i + rng:NextInteger(0, 1)) % 2 == 0 then
+			-- 🌿 a bush wall: soft, you walk right through it (a few sparkles hint at it)
+			local leaf = land == "Peaks" and Color3.fromRGB(225, 240, 255) or (land == "Volcano" and Color3.fromRGB(110, 80, 80) or Color3.fromRGB(80, 165, 70))
+			local mat = land == "Peaks" and M.Snow or M.Grass
+			for k = 1, 9 do
+				local x, y = ((k - 1) % 3 - 1) * 3.2 + rng:NextNumber(-0.6, 0.6), ((k - 1) // 3) * 2.6 + 2
+				local b = egg(folder, {Name = "SecretBush", Size = Vector3.new(rng:NextNumber(4.4, 5.6), rng:NextNumber(3.6, 4.6), 3.6),
+					CFrame = face * CFrame.new(x, y, rng:NextNumber(-0.6, 0.6)), Color = leaf:Lerp(Color3.new(0, 0, 0), rng:NextNumber(0, 0.18)),
+					Material = mat, CanCollide = false, CanQuery = false, CanTouch = false})
+				if k == 5 then sparkle(b, Color3.fromRGB(255, 240, 150), 2) end
+			end
+		else
+			-- 🪨 a cracked rock: hold ⛏️ to break it (its cracks glow a little)
+			local rock = egg(blockers, {Name = "CrackedRock", Size = Vector3.new(11, 9, 5), CFrame = face * CFrame.new(0, 4.2, 0),
+				Color = th.PillarColor, Material = th.PillarMat, CanQuery = true})
+			local cracks = {}
+			for _, c in {{-1.6, 1.2, 25}, {1.2, -0.4, -35}, {0.2, 2.3, 70}} do
+				table.insert(cracks, P(folder, {Name = "Crack", Size = Vector3.new(3.4, 0.25, 0.3), CFrame = face * CFrame.new(c[1], 4.2 + c[2], 2.45) * CFrame.Angles(0, 0, math.rad(c[3])),
+					Color = th.Accent, Material = M.Neon, Transparency = 0.25, CanCollide = false, CanQuery = false, CanTouch = false}))
+			end
+			local prompt = API.makePrompt(rock, "⛏️ Break", "Cracked rock")
+			prompt.HoldDuration = D.RockHold or 1.2
+			prompt.Triggered:Connect(function(player)
+				if R.runOf[player] ~= run or not rock.Parent then return end
+				API.pop(rock, "💥")
+				local at = rock.CFrame
+				for _, c in cracks do c:Destroy() end
+				rock:Destroy()
+				for _ = 1, 6 do -- bits that tumble away and vanish
+					local bit = egg(folder, {Size = Vector3.one * rng:NextNumber(1.2, 2.2), CFrame = at * CFrame.new(rng:NextNumber(-3, 3), rng:NextNumber(-2, 2), 0),
+						Color = th.PillarColor, Material = th.PillarMat, Anchored = false, CanCollide = false, CanQuery = false, CanTouch = false})
+					bit.AssemblyLinearVelocity = (at.LookVector * -1 + Vector3.new(rng:NextNumber(-1, 1), 1, rng:NextNumber(-1, 1))) * 18
+					task.delay(1.4, function() if bit.Parent then bit:Destroy() end end)
+				end
+				API.toast(player, "💥 The rock broke! A secret chest!")
+			end)
+		end
+	end
+
+	-- 🏃 the runaway chest: it hops off down the trails when someone comes close, then gets tired
+	do
+		local cands = {}
+		for c = 1, n * n do
+			if not busy[c] and not onRoute[c] and c ~= start then table.insert(cands, c) end
+		end
+		for _ = 1, math.min(tier.Runaway or 0, #cands) do
+			local c = table.remove(cands, rng:NextInteger(1, #cands))
+			local nd = node[c]
+			local at = W(nd.p + Vector2.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1)) * nd.r * 0.4)
+			local box, m = run.makeChest(CFrame.new(at), "Runaway")
+			local prompt = box:FindFirstChildOfClass("ProximityPrompt")
+			if prompt then prompt.Enabled = false end
+			-- googly eyes on the front
+			local pv = m:GetPivot()
+			for _, x in {-1, 1} do
+				local eye = egg(m, {Name = "Eye", Size = Vector3.one * 1.1, CFrame = pv * CFrame.new(x * 0.95, 2.1, -1.45), Color = Color3.new(1, 1, 1), CanCollide = false, CanQuery = false, CanTouch = false})
+				egg(m, {Name = "Pupil", Size = Vector3.one * 0.5, CFrame = eye.CFrame * CFrame.new(0, -0.05, -0.38), Color = Color3.fromRGB(30, 30, 40), CanCollide = false, CanQuery = false, CanTouch = false})
+			end
+			local cur, hops, told = c, 0, {}
+			local function hop(from, to, t, h)
+				local dir = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
+				local look = dir.Magnitude > 0.1 and dir.Unit or Vector3.new(0, 0, -1)
+				local steps = math.max(5, math.floor(t * 30))
+				for k = 1, steps do
+					if not m.Parent then return end
+					local a = k / steps
+					local p = from:Lerp(to, a) + Vector3.new(0, math.sin(a * math.pi) * h, 0)
+					m:PivotTo(CFrame.lookAt(p, p + look))
+					task.wait(t / steps)
+				end
+			end
+			task.spawn(function()
+				while m.Parent and hops < (D.RunawayHops or 3) do
+					task.wait(0.25)
+					local pos = m:GetPivot().Position
+					local near = {}
+					for p in run.inside do
+						local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+						if hrp and (hrp.Position - pos).Magnitude < (D.RunawayNear or 16) then table.insert(near, p) end
+					end
+					if #near > 0 then
+						hops += 1
+						for _, p in near do
+							if not told[p] then told[p] = true API.toast(p, "🏃 A chest ran away! Catch it!") end
+						end
+						-- off down a trail to a linked clearing (never the boss arena), bouncing along
+						local opts = {}
+						for b in open[cur] or {} do table.insert(opts, b) end
+						local nxt = #opts > 0 and opts[rng:NextInteger(1, #opts)] or cur
+						local tr, rev = trailOf(cur, nxt)
+						local from = pos
+						if tr and nxt ~= cur then
+							for k = 1, #tr.pts do
+								local q = rev and tr.pts[#tr.pts + 1 - k] or tr.pts[k]
+								local to = W(q)
+								hop(from, to, 0.32, 2.2)
+								from = to
+							end
+						end
+						local nn = node[nxt]
+						local to = W(nn.p + Vector2.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1)) * nn.r * 0.45)
+						hop(from, to, 0.45, 3)
+						cur = nxt
+					end
+				end
+				if not m.Parent then return end
+				if prompt then prompt.Enabled = true end
+				local pos = m:GetPivot().Position
+				for p in run.inside do
+					local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+					if hrp and (hrp.Position - pos).Magnitude < 60 then API.toast(p, "😮‍💨 The chest is tired! Open it now!") end
+				end
+			end)
+		end
+	end
+
 	-- a walkable spot for flying critters / buddy pets: somewhere in a clearing
 	local nodeList = {}
 	for _, nd in node do table.insert(nodeList, nd) end
@@ -1012,6 +1176,7 @@ local function build(run)
 		return Vector3.new(O.X + nd.p.X, 0, O.Z + nd.p.Y)
 	end
 	run.layout = {dungeon = true}
+	run.t0 = os.clock() -- ⭐ the run score's clock
 end
 
 ---------------------------------------------------------------- chests (loot rolls live here so Realms stays small)
@@ -1019,15 +1184,18 @@ local CHEST = {
 	Wood = {Scale = 0.75, Res = {1, 3}, Text = "🧺 Chest! ", Act = "🧺 Open", Obj = "Chest", Pop = "✨"},
 	Silver = {Scale = 0.85, Res = {2, 4}, Text = "✨ Silver chest! ", Act = "✨ Open", Obj = "Silver chest", Pop = "🌟"},
 	Boss = {Scale = 1.2, Res = {3, 6}, Text = "🎁 Boss chest! ", Act = "🎁 Open", Obj = "Boss chest", Pop = "🎉"},
+	Hidden = {Scale = 0.8, Res = {2, 4}, Text = "🙈 Secret chest! ", Act = "🙈 Open", Obj = "Secret chest", Pop = "🌟"},
+	Runaway = {Scale = 0.8, Res = {2, 5}, Text = "🏃 You caught the runaway chest! ", Act = "🏃 Open", Obj = "Runaway chest", Pop = "🎉"},
 }
 local function makeChestFor(run)
 	local land = run.terrain
 	local tier = D.Tiers[run.tier or 1] or D.Tiers[1]
 	return function(cf, kind)
 		local k = CHEST[kind] or CHEST.Wood
-		local mult = kind == "Boss" and D.BossChestX or (kind == "Silver" and D.SilverX or 1)
-		local capChance = kind == "Boss" and 1 or (kind == "Silver" and D.SilverCapsule or D.ChestCapsule)
+		local mult = ({Boss = D.BossChestX, Silver = D.SilverX, Hidden = D.HiddenX, Runaway = D.RunawayX})[kind] or 1
+		local capChance = ({Boss = 1, Silver = D.SilverCapsule, Hidden = D.HiddenCapsule, Runaway = D.RunawayCapsule})[kind] or D.ChestCapsule
 		local m, box = R.treasure(run.folder, cf, {Color = (D.Themes[land] or D.Themes.Meadow).Accent}, k.Scale)
+		if kind ~= "Boss" then run.chestTotal = (run.chestTotal or 0) + 1 end -- (⭐ run score: find half of them)
 		if kind == "Silver" then -- silver bands instead of gold
 			for _, p in m:GetDescendants() do
 				if p:IsA("BasePart") and p.Material == M.Metal then p.Color = Color3.fromRGB(215, 225, 240) end
@@ -1040,8 +1208,13 @@ local function makeChestFor(run)
 			if R.runOf[player] ~= run then return end
 			if seen[player.UserId] then API.toast(player, "🧺 You already opened this one. Find another!") return end
 			seen[player.UserId] = true
+			if kind ~= "Boss" then
+				run.found = run.found or {}
+				run.found[player] = (run.found[player] or 0) + 1
+			end
 			local got = {}
-			local coins = math.floor((D.ChestCoins[land] or 40) * tier.Loot * mult + 0.5)
+			local x = kind == "Boss" and run.scoreX and run.scoreX[player] or 1 -- (⭐ run score bonus)
+			local coins = math.floor((D.ChestCoins[land] or 40) * tier.Loot * mult * x + 0.5)
 			API.addCoins(player, coins)
 			table.insert(got, ("💰 +%d"):format(coins))
 			for _, res in R.resOf(land) do
@@ -1056,8 +1229,13 @@ local function makeChestFor(run)
 			end
 			API.pop(box, k.Pop)
 			API.toast(player, k.Text .. table.concat(got, "  "))
+			-- 📜 a furniture scroll: always in the boss chest, sometimes in the special chests
+			if API.dungeonScroll and kind ~= "Wood" then
+				local ok, text = pcall(API.dungeonScroll, player, land, kind == "Boss", tier.Loot)
+				if ok and text then API.toast(player, text) elseif not ok then warn("[Dungeons] scroll: " .. tostring(text)) end
+			end
 		end)
-		return box
+		return box, m
 	end
 end
 

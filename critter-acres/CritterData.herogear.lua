@@ -51,6 +51,7 @@ Data.HeroGearDrop = {
 	Boss = 0.25, -- land bosses (Explorer's Portal)
 	Dungeon = 1, -- dungeon bosses always drop one
 	Lands = {Meadow = {"Gold"}, Forest = {"Gold"}, Peaks = {"Gold", "Crystal"}, Caves = {"Crystal"}, Volcano = {"Crystal", "Magma"}},
+	DungeonSet = {Meadow = "Slime", Forest = "Root", Peaks = "Frost", Caves = "Amethyst", Volcano = "Dragon"}, -- 🏰 each dungeon boss's own set
 }
 -- 🎨 looks: colors / material for the part-built pieces on your character (HeroGear.server builds them)
 --   Extra = a little touch: "Leaf" (leaf on top), "Gem" (a shiny gem), "Ears" (bunny ears), "Flame" (glowy embers)
@@ -63,6 +64,12 @@ Data.HeroLooks = {
 	Magma = {Color = Color3.fromRGB(95, 75, 85), Accent = Color3.fromRGB(255, 120, 40), Material = "Basalt", Glow = true, Extra = "Flame"},
 	Bunny = {Color = Color3.fromRGB(255, 175, 210), Accent = Color3.fromRGB(255, 255, 255), Material = "Fabric", Extra = "Ears"},
 	Candy = {Color = Color3.fromRGB(255, 130, 180), Accent = Color3.fromRGB(150, 240, 200), Material = "SmoothPlastic"},
+	-- 🏰 dungeon boss sets
+	Slime = {Color = Color3.fromRGB(120, 235, 110), Accent = Color3.fromRGB(210, 255, 190), Material = "Glass", Extra = "Gem"},
+	Root = {Color = Color3.fromRGB(125, 90, 60), Accent = Color3.fromRGB(120, 205, 85), Material = "Wood", Extra = "Leaf"},
+	Frost = {Color = Color3.fromRGB(200, 235, 255), Accent = Color3.fromRGB(110, 180, 255), Material = "Ice", Shine = 0.15, Extra = "Gem"},
+	Amethyst = {Color = Color3.fromRGB(165, 105, 230), Accent = Color3.fromRGB(255, 205, 90), Material = "Glass", Glow = true, Extra = "Gem"},
+	Dragon = {Color = Color3.fromRGB(205, 60, 55), Accent = Color3.fromRGB(255, 200, 60), Material = "Metal", Shine = 0.15, Glow = true, Extra = "Flame"},
 }
 -- the pieces. Tier = look + where it comes from; Craft = true: made at the gear window; Set = a boss set (bonus below)
 Data.HeroGear = {
@@ -102,9 +109,41 @@ Data.HeroGear = {
 	{Name = "MagmaBoots", Display = "Magma Boots", Slot = "Boots", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 	{Name = "MagmaCape", Display = "Magma Cape", Slot = "Cape", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 	{Name = "MagmaShield", Display = "Magma Shield", Slot = "OffHand", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
+	-- 🏰 dungeon boss sets: each dungeon's boss always drops a piece of its own set (Data.HeroGearDrop.DungeonSet)
+	{Name = "SlimeHood", Display = "Slime Hood", Slot = "Head", Tier = "Slime", Rarity = "Epic", Set = "Slime"},
+	{Name = "SlimeSuit", Display = "Slime Suit", Slot = "Body", Tier = "Slime", Rarity = "Epic", Set = "Slime"},
+	{Name = "SlimeCape", Display = "Slime Cape", Slot = "Cape", Tier = "Slime", Rarity = "Epic", Set = "Slime"},
+	{Name = "SlimePants", Display = "Slime Pants", Slot = "Legs", Tier = "Slime", Rarity = "Epic", Set = "Slime"},
+	{Name = "SlimeBoots", Display = "Slime Boots", Slot = "Boots", Tier = "Slime", Rarity = "Epic", Set = "Slime"},
+	{Name = "SlimeShield", Display = "Slime Shield", Slot = "OffHand", Tier = "Slime", Rarity = "Epic", Set = "Slime"},
+	{Name = "BarkHelm", Display = "Bark Helm", Slot = "Head", Tier = "Root", Rarity = "Epic", Set = "Root"},
+	{Name = "BarkArmor", Display = "Bark Armor", Slot = "Body", Tier = "Root", Rarity = "Epic", Set = "Root"},
+	{Name = "RootCape", Display = "Root Cape", Slot = "Cape", Tier = "Root", Rarity = "Epic", Set = "Root"},
+	{Name = "RootLeggings", Display = "Root Leggings", Slot = "Legs", Tier = "Root", Rarity = "Epic", Set = "Root"},
+	{Name = "RootBoots", Display = "Root Boots", Slot = "Boots", Tier = "Root", Rarity = "Epic", Set = "Root"},
+	{Name = "BarkShield", Display = "Bark Shield", Slot = "OffHand", Tier = "Root", Rarity = "Epic", Set = "Root"},
+	{Name = "FrostCrown", Display = "Frost Crown", Slot = "Head", Tier = "Frost", Rarity = "Legendary", Set = "Frost"},
+	{Name = "FrostArmor", Display = "Frost Armor", Slot = "Body", Tier = "Frost", Rarity = "Legendary", Set = "Frost"},
+	{Name = "FrostCape", Display = "Frost Cape", Slot = "Cape", Tier = "Frost", Rarity = "Legendary", Set = "Frost"},
+	{Name = "FrostLeggings", Display = "Frost Leggings", Slot = "Legs", Tier = "Frost", Rarity = "Legendary", Set = "Frost"},
+	{Name = "FrostBoots", Display = "Frost Boots", Slot = "Boots", Tier = "Frost", Rarity = "Legendary", Set = "Frost"},
+	{Name = "FrostShield", Display = "Frost Shield", Slot = "OffHand", Tier = "Frost", Rarity = "Legendary", Set = "Frost"},
+	{Name = "AmethystHelm", Display = "Amethyst Helm", Slot = "Head", Tier = "Amethyst", Rarity = "Legendary", Set = "Amethyst"},
+	{Name = "AmethystArmor", Display = "Amethyst Armor", Slot = "Body", Tier = "Amethyst", Rarity = "Legendary", Set = "Amethyst"},
+	{Name = "AmethystCape", Display = "Amethyst Cape", Slot = "Cape", Tier = "Amethyst", Rarity = "Legendary", Set = "Amethyst"},
+	{Name = "AmethystLeggings", Display = "Amethyst Leggings", Slot = "Legs", Tier = "Amethyst", Rarity = "Legendary", Set = "Amethyst"},
+	{Name = "AmethystBoots", Display = "Amethyst Boots", Slot = "Boots", Tier = "Amethyst", Rarity = "Legendary", Set = "Amethyst"},
+	{Name = "AmethystShield", Display = "Amethyst Shield", Slot = "OffHand", Tier = "Amethyst", Rarity = "Legendary", Set = "Amethyst"},
+	{Name = "DragonHelm", Display = "Dragon Helm", Slot = "Head", Tier = "Dragon", Rarity = "Mythic", Set = "Dragon"},
+	{Name = "DragonArmor", Display = "Dragon Armor", Slot = "Body", Tier = "Dragon", Rarity = "Mythic", Set = "Dragon"},
+	{Name = "DragonCape", Display = "Dragon Cape", Slot = "Cape", Tier = "Dragon", Rarity = "Mythic", Set = "Dragon"},
+	{Name = "DragonLeggings", Display = "Dragon Leggings", Slot = "Legs", Tier = "Dragon", Rarity = "Mythic", Set = "Dragon"},
+	{Name = "DragonBoots", Display = "Dragon Boots", Slot = "Boots", Tier = "Dragon", Rarity = "Mythic", Set = "Dragon"},
+	{Name = "DragonShield", Display = "Dragon Shield", Slot = "OffHand", Tier = "Dragon", Rarity = "Mythic", Set = "Dragon"},
 }
-Data.HeroTierIcon = {Leaf = "🌿", Stone = "🪨", Iron = "⚙️", Gold = "🟡", Crystal = "💎", Magma = "🔥"}
-Data.HeroTierOrder = {"Leaf", "Stone", "Iron", "Gold", "Crystal", "Magma"}
+Data.HeroTierIcon = {Leaf = "🌿", Stone = "🪨", Iron = "⚙️", Gold = "🟡", Crystal = "💎", Magma = "🔥",
+	Slime = "🟢", Root = "🌳", Frost = "❄️", Amethyst = "🟣", Dragon = "🐉"}
+Data.HeroTierOrder = {"Leaf", "Stone", "Iron", "Gold", "Crystal", "Magma", "Slime", "Root", "Frost", "Amethyst", "Dragon"}
 Data.HeroGearByName = {}
 for _, g in Data.HeroGear do
 	g.Icon = g.Icon or Data.HeroTierIcon[g.Tier] or "🛡️"
@@ -116,6 +155,12 @@ Data.HeroSets = {
 	Gold = {Display = "Golden Set", Icon = "🟡", Glow = Color3.fromRGB(255, 215, 90), [2] = {Pwr = 0.05}, [4] = {Pwr = 0.1, HP = 0.1}},
 	Crystal = {Display = "Crystal Set", Icon = "💎", Glow = Color3.fromRGB(170, 140, 255), [2] = {Pwr = 0.08}, [4] = {Pwr = 0.15, HP = 0.15}},
 	Magma = {Display = "Magma Set", Icon = "🔥", Glow = Color3.fromRGB(255, 130, 50), [2] = {Pwr = 0.1}, [4] = {Pwr = 0.2, HP = 0.2}},
+	-- 🏰 dungeon boss sets
+	Slime = {Display = "Slime Set", Icon = "🟢", Glow = Color3.fromRGB(140, 255, 120), [2] = {Pwr = 0.06}, [4] = {Pwr = 0.12, HP = 0.1}},
+	Root = {Display = "Root Set", Icon = "🌳", Glow = Color3.fromRGB(150, 230, 90), [2] = {Pwr = 0.06}, [4] = {Pwr = 0.12, HP = 0.12}},
+	Frost = {Display = "Frost Set", Icon = "❄️", Glow = Color3.fromRGB(160, 220, 255), [2] = {Pwr = 0.09}, [4] = {Pwr = 0.16, HP = 0.15}},
+	Amethyst = {Display = "Amethyst Set", Icon = "🟣", Glow = Color3.fromRGB(200, 140, 255), [2] = {Pwr = 0.09}, [4] = {Pwr = 0.17, HP = 0.15}},
+	Dragon = {Display = "Dragon Set", Icon = "🐉", Glow = Color3.fromRGB(255, 120, 60), [2] = {Pwr = 0.12}, [4] = {Pwr = 0.22, HP = 0.22}},
 }
 -- what one piece gives: {Pwr = flat ⚡, HP = %, Def = %, Spd = %}
 function Data.HeroGearStats(g)

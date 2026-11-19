@@ -14,5 +14,20 @@
   {"Name": "Gold Statue", "Icon": "🗿", "Cost": {"Stone": 20, "Gold": 4, "Coins": 300}},
   {"Name": "Lava Lamp", "Icon": "🌋", "Cost": {"Magma": 3, "Obsidian": 1}},
   {"Name": "Sprinkler", "Icon": "💦", "Cost": {"Iron": 4, "Stone": 6, "Coins": 100}, "Effect": "Water", "Range": 14},
-  {"Name": "Beehive", "Icon": "🐝", "Cost": {"Wood": 8, "Mushroom": 4, "Coins": 80}, "Effect": "Grow", "Range": 14, "Boost": 0.25}
+  {"Name": "Beehive", "Icon": "🐝", "Cost": {"Wood": 8, "Mushroom": 4, "Coins": 80}, "Effect": "Grow", "Range": 14, "Boost": 0.25},
+  {"Name": "Slime Lamp", "Icon": "🟢", "Cost": {"Fiber": 8, "Stone": 6, "Coins": 120}},
+  {"Name": "Bubble Chair", "Icon": "🫧", "Cost": {"Fiber": 10, "Coins": 150}},
+  {"Name": "Glow Shroom", "Icon": "🍄", "Cost": {"Fiber": 6, "Stone": 8, "Coins": 100}},
+  {"Name": "Root Arch", "Icon": "🌳", "Cost": {"Wood": 16, "Coins": 160}},
+  {"Name": "Firefly Jar", "Icon": "✨", "Cost": {"Wood": 6, "Mushroom": 6, "Coins": 140}},
+  {"Name": "Acorn Seat", "Icon": "🌰", "Cost": {"Wood": 12, "Mushroom": 4, "Coins": 140}},
+  {"Name": "Ice Sculpture", "Icon": "🧊", "Cost": {"Ice": 14, "Coins": 200}},
+  {"Name": "Snow Globe", "Icon": "❄️", "Cost": {"Ice": 8, "Iron": 4, "Coins": 220}},
+  {"Name": "Frost Lantern", "Icon": "🏮", "Cost": {"Iron": 6, "Ice": 6, "Coins": 220}},
+  {"Name": "Geode", "Icon": "💎", "Cost": {"Gem": 5, "Coins": 300}},
+  {"Name": "Mine Cart", "Icon": "🛒", "Cost": {"Gold": 4, "Gem": 2, "Coins": 320}},
+  {"Name": "Gem Tree", "Icon": "💠", "Cost": {"Gem": 6, "Gold": 3, "Coins": 400}},
+  {"Name": "Ember Brazier", "Icon": "🔥", "Cost": {"Magma": 4, "Obsidian": 2, "Coins": 400}},
+  {"Name": "Dragon Statue", "Icon": "🐉", "Cost": {"Obsidian": 5, "Magma": 3, "Coins": 600}},
+  {"Name": "Magma Throne", "Icon": "👑", "Cost": {"Obsidian": 4, "Magma": 4, "Coins": 500}}
 ]

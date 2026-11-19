@@ -132,7 +132,8 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [x] v2 (CK): stairs / ledges with one-way ✨ silver chests, obby jump pads, zones with their own look + signs + landmarks; attacks / mobs / shots blocked by walls
 - [x] v3 (CK: "not square rooms, a proper map"): natural terrain. Clearings + winding trails, cliffs with bushes / trees as walls, cave ceilings on Slime Cave / Crystal Mines / Lava Keep, open sky on Root Tunnels / Ice Halls, rock-pillar ledges + rope bridges
 - [ ] **Playtest v3 first** (map building is brand new and has never run)
-- [ ] Stage 3 (next, recommended order): ⚔️ boss gear sets (2-piece bonus + glow), 📜 furniture scrolls → dungeon-only decorations (🧱 placeholders, then shapes) + a scroll album + a guaranteed drop, 🙈 hidden chests (push-through bushes, breakable cracked rock), 🏃 runaway chest, ⭐ run score, 🎉 first-clear bonus
+- [x] Stage 3 built 2026-11-19 (see RESUME "Dungeon stage 3"); still to do: real shapes for the 15 🧱 scroll decorations, best ⭐ in the portal picker
+- [x] ~~Stage 3:~~ ⚔️ boss gear sets (2-piece bonus + glow), 📜 furniture scrolls → dungeon-only decorations (🧱 placeholders, then shapes) + a scroll album + a guaranteed drop, 🙈 hidden chests (push-through bushes, breakable cracked rock), 🏃 runaway chest, ⭐ run score, 🎉 first-clear bonus
 - [ ] Stage 4: easy puzzles (torches, colour tiles, push block), levers / secret spots, a 🐾 buddy pet that sniffs out chests, a 🗺️ minimap that fills in + a glowing trail home, cute traps (slime puddles, bounce pads, snowballs), the boss calls helpers halfway
 - [x] Dev menu: jump into dungeon X ⭐N + 🔓 open all dungeons; 🏰 Dungeon Portal stop in the portal picker
 - [ ] Small: check the CritterSync plugin shows after a Studio restart; build real shapes for any 🧱 placeholder decorations CK adds
@@ -142,5 +143,5 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [ ] CK playtests: crafting, wearing, the look on the avatar, PWR/HP changes, boss drops
 - [ ] 👗 Cosmetics shop (sell looks later; only 2 sample looks now, given by the dev menu)
 - [ ] Critter Editor tab for Hero Gear (pieces, looks, sets, numbers)
-- [ ] Dungeon stage 3: each dungeon boss gets its OWN set (uses Data.HeroSets / Set field)
+- [x] Dungeon stage 3: each dungeon boss gets its OWN set (Slime / Root / Frost / Amethyst / Dragon)
 - [ ] Maybe: off-hand variety (orbs / books for mages), a "hide helmet" toggle, 3D previews on the gear cards

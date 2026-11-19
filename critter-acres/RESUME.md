@@ -893,3 +893,27 @@ Pushed by line splice (Studio's old copies differed from local only by these cha
   and a jump button per dungeon per ⭐ (`DEV_EXTRA.Dungeon` now also takes "Land:tier" in one arg; no energy).
 - **Mirrors re-synced:** Studio's DevMenu (hero gear buttons) and CritterMenus (dock 🛡️ Gear) had edits the local files lacked; both local files now equal Studio.
 - **Checksums:** Realms 54518/449041, DevMenu 12741/63085, CritterMenus 61336/992786 (all = local).
+
+## 🏰 Dungeon stage 3 (2026-11-19, IN STUDIO, verified by length + checksum + compile; NOT playtested)
+- **⚔️ Boss gear sets** (CritterData hero gear block): each dungeon boss always drops a piece of its OWN 6-piece set
+  (`Data.HeroGearDrop.DungeonSet`, used by HeroGear `API.heroGearDrop(land, dungeon)`): 🟢 Slime (Epic, Slime Cave), 🌳 Root (Epic, Root Tunnels),
+  ❄️ Frost (Legendary, Ice Halls), 🟣 Amethyst (Legendary, Crystal Mines), 🐉 Dragon (Mythic, Lava Keep). New HeroLooks + HeroSets (2 / 4 pieces, glow at 4).
+- **📜 Furniture scrolls:** 15 dungeon decorations (3 per dungeon, `Data.Dungeon.Scrolls`) added to `Data.Decor` (+ editor decor.json); all are
+  🧱 placeholders in Builds for now. `Data.ScrollLandOf` / `Data.DecorLocked(name, prof.Scrolls)` lock them until the scroll is found.
+  Boss chest = a sure scroll you don't have (all found: coins); silver / hidden / runaway chests = `ScrollChance` 0.15.
+  CraftServer: CraftInfo sends `Scrolls`, BuyDecor refuses locked ones. CritterWorld Workbench Farm tab: normal decorations, then a
+  "📜 Scroll album x/15" section (locked = 📜 card "Find scroll", unlocked = buy card). Decorate panel + CritterMenus Farm list hide locked ones.
+- **🙈 Hidden chests** (Dungeons): `tier.Hidden` nooks (radius 5, 3 studs past a clearing's edge, part of the terrain field via allNodes, not
+  clearings) with a "Hidden" chest; the mouth is either a 🌿 bush wall (non-colliding eggs + a sparkle) or a 🪨 cracked rock (in Blockers,
+  glowing cracks, ⛏️ hold-prompt `RockHold` 1.2 s, bursts). Edge props skip nook mouths.
+- **🏃 Runaway chest:** `tier.Runaway` (1) per run, googly eyes; when someone is within `RunawayNear` it bounces down a trail to a linked clearing,
+  `RunawayHops` times, then its prompt turns on ("😮‍💨 The chest is tired!").
+- **⭐ Run score / 🎉 first clear:** new **DungeonRewards.server** (ServerScriptService) + **DungeonScore.client** (StarterPlayerScripts),
+  RemoteEvent `ReplicatedStorage.DungeonEvent`. Stars: cleared + under `tier.Par` (420/600/840 s) + found ≥ half the non-boss chests.
+  Boss chest coins x `ScoreBonus` {1, 1.25, 1.5}; best stars in `prof.DungeonStars["<land><tier>"]`. First clear of a land+tier: coins
+  (boss chest x `FirstClearX` 3) + a capsule. Faints counted by wrapping `API.realmSpawn`.
+- **Dev menu 🏰 Dungeons:** 📜 All scrolls / 📜 Clear scrolls (`DEV_EXTRA.Scrolls` / `ScrollsReset`), 🟢 Slime set on, 🐉 Dragon set on.
+- **Checksums (Studio = local):** Dungeons 58036/529472, DungeonRewards 5373/452839, DungeonScore 3024/258724, HeroGear 27810/254053,
+  CraftServer 15277/251780, CritterWorld 65705/272270, CritterMenus 61500/6923, DevMenu 12991/84778, CritterData 121821/530159 (loads; GameData still applies).
+- **Next:** build real shapes for the 15 🧱 scroll decorations (ARTSTYLE.md); maybe show best ⭐ per dungeon in the Dungeon Portal picker; then stage 4.
+

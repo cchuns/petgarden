@@ -290,12 +290,42 @@ function renderBench()
 	elseif benchTab == "Farm" then
 		header("Decorations", "Buy here, then place them with 🏡 Decorate")
 		local g = grid(UDim2.fromOffset(160, 210))
-		for i, d in Data.Decor do
+		local function decorCard(gg, i, d)
 			local owned = (info.DecorInv or {})[d.Name] or 0
 			local sub = Data.CostText(d.Cost) .. (owned > 0 and (" · have " .. owned) or "")
 			if d.Effect then sub = (d.Effect == "Water" and "💦 waters · " or "🐝 faster · ") .. sub end
-			card(g, i, d.Icon, d.Name, sub, "Buy", have(d.Cost, info), function() done(act("BuyDecor", d.Name), d.Icon .. " " .. d.Name .. " bought! Place it with 🏡 Decorate") end,
+			card(gg, i, d.Icon, d.Name, sub, "Buy", have(d.Cost, info), function() done(act("BuyDecor", d.Name), d.Icon .. " " .. d.Name .. " bought! Place it with 🏡 Decorate") end,
 				need(d.Cost, info))
+		end
+		for i, d in Data.Decor do
+			if not (Data.ScrollLandOf and Data.ScrollLandOf[d.Name]) then decorCard(g, i, d) end
+		end
+		-- 📜 the scroll album: dungeon-only decorations, unlocked by finding their scroll in that 🏰 dungeon
+		if Data.ScrollLandOf and Data.Dungeon then
+			local list, got = {}, 0
+			for _, b in Data.Biomes do
+				for _, name in Data.Dungeon.Scrolls[b.Name] or {} do
+					local d = Data.DecorByName[name]
+					if d then
+						table.insert(list, {d = d, land = b.Name})
+						if not Data.DecorLocked(name, info.Scrolls) then got += 1 end
+					end
+				end
+			end
+			if #list > 0 then
+				header(("📜 Scroll album  %d/%d"):format(got, #list), "Dungeon decorations: find their scroll in a 🏰 dungeon to unlock")
+				local ag = grid(UDim2.fromOffset(160, 210))
+				for i, e in list do
+					if Data.DecorLocked(e.d.Name, info.Scrolls) then
+						local th = Data.Dungeon.Themes[e.land] or {}
+						UI.card(ag, {Order = i, Icon = "📜", Name = e.d.Name, Sub = ("In %s %s"):format(th.Icon or "🏰", th.Name or e.land),
+							Button = {Text = "🔒 Find scroll", Kind = "no"},
+							Fn = function() note(("📜 Find the %s scroll in the %s %s dungeon!"):format(e.d.Name, th.Icon or "🏰", th.Name or e.land), false) end})
+					else
+						decorCard(ag, i, e.d)
+					end
+				end
+			end
 		end
 		header("🌱 Soil", "Better soil grows faster and gets more mutations")
 		local sg = grid(UDim2.fromOffset(140, 190))
@@ -494,7 +524,8 @@ function renderDeco()
 		if ((info.DecorInv or {})[d.Name] or 0) > 0 then table.insert(list, d) end
 	end
 	for _, d in Data.Decor do
-		if ((info.DecorInv or {})[d.Name] or 0) == 0 then table.insert(list, d) end
+		-- (📜 dungeon decorations show up once their scroll is found)
+		if ((info.DecorInv or {})[d.Name] or 0) == 0 and not (Data.DecorLocked and Data.DecorLocked(d.Name, info.Scrolls)) then table.insert(list, d) end
 	end
 	deco.slots = {}
 	for i, d in list do
