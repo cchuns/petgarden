@@ -6,7 +6,8 @@
 -- Every piece adds ⚡ power + its slot bonus. Combat reads the total through API.heroGearStats(player):
 --   {Pwr = flat ⚡, PwrPct = set bonus %, HP = +% max HP, Def = % less hurt, Spd = % walk speed (lands), Glow = Color3 or nil}
 -- 🔨 Leaf / Stone / Iron are crafted at the plaza Workbench (GearCraft, CritterWorld Workbench window, near the table only). Boss-tier pieces only come from bosses (API.heroGearDrop + Combat stars).
--- 🎨 What you wear SHOWS on your character: part-built pieces welded on (folder "HeroGearLook"). A 👗 look in a slot
+-- 🎨 What you wear SHOWS on your character: part-built pieces welded on (folder "HeroGearLook"). ⚔️ Your weapon hangs on
+--   your back (folder "WeaponBack") whenever it's not in your hand. A 👗 look in a slot
 --   beats the gear's own look (cosmetics). MainHand looks swap the weapon's model (API.weaponSkin, read by Combat).
 -- Actions (CritterAction): GearInfo, GearEquip(id), GearOff(slot), GearCraft(name), LookWear(slot, name or "").
 -- Client: StarterPlayerScripts.HeroGear (the 🛡️ Gear window, key G).
@@ -348,9 +349,14 @@ local function dress(player)
 	folder.Parent = char
 	tuckHats(char, headShown)
 end
+local slingWeapon -- (below)
 local function redress(player)
 	local ok, err = pcall(dress, player)
 	if not ok then warn("[HeroGear] dress: " .. tostring(err)) end
+	if player.Character and slingWeapon then
+		ok, err = pcall(slingWeapon, player, player.Character)
+		if not ok then warn("[HeroGear] weapon on back: " .. tostring(err)) end
+	end
 end
 
 -- numbers changed: PWR / HP / speed follow, and the character re-dresses
@@ -507,9 +513,47 @@ end
 local BODY = {Head = true, UpperTorso = true, LowerTorso = true, Torso = true, LeftUpperArm = true, RightUpperArm = true, LeftLowerArm = true,
 	LeftUpperLeg = true, RightUpperLeg = true, LeftLowerLeg = true, RightLowerLeg = true, LeftFoot = true, RightFoot = true,
 	["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true}
+-- ⚔️ your weapon on your back whenever it's NOT in your hand (town, farm, or put away in the lands).
+-- A copy of the weapon Tool's Handle (Combat makes it, so 👗 weapon looks and ✨ shiny show too), in folder "WeaponBack".
+function slingWeapon(player, char)
+	local old = char:FindFirstChild("WeaponBack")
+	if old then old:Destroy() end
+	for _, t in char:GetChildren() do
+		if t:IsA("Tool") and t:GetAttribute("Weapon") then return end -- held: it's in your hand already
+	end
+	local bp = player:FindFirstChildOfClass("Backpack")
+	local tool
+	for _, t in bp and bp:GetChildren() or {} do
+		if t:IsA("Tool") and t:GetAttribute("Weapon") then tool = t end
+	end
+	local handle = tool and tool:FindFirstChild("Handle")
+	local up = partOf(char, "UpperTorso", "Torso")
+	if not handle or not handle:IsA("BasePart") or not up then return end
+	local p = handle:Clone()
+	p.Name = "Weapon"
+	for _, d in p:GetDescendants() do
+		if d:IsA("JointInstance") or d:IsA("WeldConstraint") or d:IsA("Attachment") or d:IsA("TouchTransmitter") or d:IsA("BaseScript") then d:Destroy() end
+	end
+	p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.Massless = false, false, false, false, true
+	p.CastShadow = false
+	-- across the back on a slant, past a cape if you wear one (characters face -Z, so the back is +Z)
+	local t = up.Size
+	local prof = API.profiles[player]
+	local cape = prof and (wornIn(prof, "Cape") or lookIn(prof, "Cape"))
+	local behind = t.Z * 0.5 + p.Size.Z * 0.5 + 0.2 + (cape and 0.3 or 0)
+	local offset = CFrame.new(0, t.Y * 0.05, behind) * CFrame.Angles(0, 0, math.rad(40))
+	local folder = Instance.new("Folder")
+	folder.Name = "WeaponBack"
+	p.CFrame = up.CFrame * offset
+	local w = Instance.new("Weld")
+	w.Part0, w.Part1, w.C0 = up, p, offset
+	w.Parent = p
+	p.Parent = folder
+	folder.Parent = char
+end
 local function hookChar(player, char)
 	-- the avatar's body parts get swapped in while it loads: dress again once they settle
-	local pending = false
+	local pending, slingPending = false, false
 	local function soon()
 		if pending then return end
 		pending = true
@@ -518,8 +562,31 @@ local function hookChar(player, char)
 			if player.Character == char and char.Parent then redress(player) end
 		end)
 	end
+	local function slingSoon() -- (a tool moving between hand and backpack fires a few events: wait for it to settle)
+		if slingPending then return end
+		slingPending = true
+		task.delay(0.15, function()
+			slingPending = false
+			if player.Character == char and char.Parent then
+				local ok, err = pcall(slingWeapon, player, char)
+				if not ok then warn("[HeroGear] weapon on back: " .. tostring(err)) end
+			end
+		end)
+	end
+	local function isWeapon(c) return c:IsA("Tool") and c:GetAttribute("Weapon") ~= nil end
 	char.ChildAdded:Connect(function(c)
-		if (c:IsA("BasePart") and BODY[c.Name]) or c:IsA("Accessory") then soon() end
+		if (c:IsA("BasePart") and BODY[c.Name]) or c:IsA("Accessory") then soon() slingSoon() end
+		if isWeapon(c) then slingSoon() end
+	end)
+	char.ChildRemoved:Connect(function(c)
+		if isWeapon(c) then slingSoon() end
+	end)
+	task.spawn(function()
+		local bp = player:WaitForChild("Backpack", 10)
+		if not bp or player.Character ~= char then return end
+		bp.ChildAdded:Connect(function(c) if isWeapon(c) then slingSoon() end end)
+		bp.ChildRemoved:Connect(function(c) if isWeapon(c) then slingSoon() end end)
+		slingSoon()
 	end)
 	soon()
 end

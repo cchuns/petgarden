@@ -119,12 +119,26 @@ local function buildDoll()
 	local dist = (h * 1.2) / math.tan(math.rad(15)) -- 1.2 = roomy margin around you (bigger = smaller avatar)
 	cam.CFrame = CFrame.lookAt(Vector3.new(0, cf.Position.Y, -dist), Vector3.new(0, cf.Position.Y, 0))
 end
--- a moment after a change the server re-dresses you: show the new look
-local function dollSoon()
-	task.delay(0.45, function()
+-- the server re-dresses you after a change: rebuild the avatar when your gear / weapon pieces actually arrive
+local dollPending = false
+local function dollSoon(wait)
+	if dollPending then return end
+	dollPending = true
+	task.delay(wait or 0.2, function()
+		dollPending = false
 		if win.frame.Visible then buildDoll() end
 	end)
 end
+local LOOK = {HeroGearLook = true, WeaponBack = true}
+local function watchChar(char)
+	local function changed(c)
+		if LOOK[c.Name] or c:IsA("Tool") then dollSoon() end
+	end
+	char.ChildAdded:Connect(changed)
+	char.ChildRemoved:Connect(changed)
+end
+player.CharacterAdded:Connect(watchChar)
+if player.Character then watchChar(player.Character) end
 
 ---------------------------------------------------------------- the slot cards
 local function slotLook(s)

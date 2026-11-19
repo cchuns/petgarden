@@ -864,8 +864,8 @@ CK paused the dungeon work to add player gear first (stage 3 boss sets need it).
 ## ✅ Gear window rebuild (2026-11-19): IN STUDIO (pushed 2026-11-19, each verified by length + checksum + compile)
 CK's decisions: crafting only at the 🔨 Workbench; the G window has one tab "🧍 Character" (an "👗 Outfits" tab with the same layout comes later); 🎁 Capsules stay in the old Weapons window, reached by a button in the Weapon tab.
 Pushed by line splice (Studio's old copies differed from local only by these changes). Studio = local for all five:
-- HeroGear.client.lua 18793/525433 (avatar framing 0.85 -> 1.2 for a roomier margin; Cape slot; tab labels fixed): full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
-- HeroGear.server.lua 24544/978929 (+ BUILD.Cape): GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
+- HeroGear.client.lua 19287/569319 (avatar framing 0.85 -> 1.2 for a roomier margin; Cape slot; tab labels fixed; avatar rebuilds on look changes): full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
+- HeroGear.server.lua 27625/237342 (+ BUILD.Cape, weapon on back): GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
 - CritterData.herogear.lua 10886/864744 (block = file minus the extra trailing newline, 10885/864734): adds `Data.HeroCraftReach = 24`, the 🦸 Cape slot. In Studio the hero gear block matches this file (whole CritterData now 113207/844792)
 - Combat.client.lua 39365/185350: bridge "Capsules" opens the weapons window on the Caps tab
 - CritterWorld.client.lua 64247/155808: Workbench gets a "🧍 Hero gear" tab (Leaf/Stone/Iron, GearCraft)
@@ -876,3 +876,11 @@ Pushed by line splice (Studio's old copies differed from local only by these cha
   New pieces: Leaf / Stone / Iron Cape (crafted at the 🔨 Workbench) and Golden / Crystal / Magma Cape (boss drops, part of their sets, so sets have 6 pieces; the 2 / 4 bonuses are unchanged).
 - Server: `BUILD.Cape` welds a part-built cape to the UpperTorso back (collar + front clasp + hem in the accent color; Leaf/Gem/Flame extras). R6 uses a shorter cape.
 - Gear window: the Cape slot card sits top right (by the shoulder). Tab labels are now a TextLabel child (ZIndex 6) with no UIPadding on the tab: the padding had pushed the white joining strip up over the selected tab's words (the "cut in half" label).
+
+## ⚔️ Weapon on your back + live Gear avatar (2026-11-19, IN STUDIO, verified by length + checksum + compile)
+- HeroGear.server `slingWeapon(player, char)`: when the weapon Tool (attribute `Weapon`, made by Combat giveTool) is NOT in the character,
+  a copy of its Handle is welded across the UpperTorso back at 40° in folder `WeaponBack` (pushed out 0.3 more when a cape is worn).
+  It runs 0.15 s after the weapon tool moves (character / Backpack ChildAdded/Removed) and after every redress. Held in the lands = no back copy.
+  So the weapon shows in town and on the farm; gear (HeroGearLook) already showed everywhere.
+- HeroGear.client: the Gear avatar rebuilds (0.2 s debounce) whenever HeroGearLook / WeaponBack / a Tool is added to or removed from your
+  character while the window is open (it used to rebuild once after a fixed 0.45 s, which could beat the server's re-dress).
