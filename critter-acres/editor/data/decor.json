@@ -1,0 +1,18 @@
+[
+  {"Name": "Flower Bed", "Icon": "🌷", "Cost": {"Coins": 30}},
+  {"Name": "White Fence", "Icon": "🤍", "Cost": {"Coins": 10}},
+  {"Name": "Hay Bale", "Icon": "🌾", "Cost": {"Fiber": 6}},
+  {"Name": "Oak Tree", "Icon": "🌳", "Cost": {"Wood": 10, "Coins": 40}},
+  {"Name": "Bench", "Icon": "🪑", "Cost": {"Wood": 8}},
+  {"Name": "Lamp Post", "Icon": "💡", "Cost": {"Iron": 2, "Coins": 60}},
+  {"Name": "Mushroom House", "Icon": "🍄", "Cost": {"Mushroom": 6, "Wood": 6}},
+  {"Name": "Snowman", "Icon": "⛄", "Cost": {"Ice": 8}},
+  {"Name": "Pond", "Icon": "💧", "Cost": {"Stone": 10, "Coins": 80}},
+  {"Name": "Fountain", "Icon": "⛲", "Cost": {"Stone": 16, "Coins": 150}},
+  {"Name": "Windmill", "Icon": "🌀", "Cost": {"Wood": 20, "Stone": 10, "Coins": 120}},
+  {"Name": "Crystal Lamp", "Icon": "🔮", "Cost": {"Gem": 3, "Coins": 100}},
+  {"Name": "Gold Statue", "Icon": "🗿", "Cost": {"Stone": 20, "Gold": 4, "Coins": 300}},
+  {"Name": "Lava Lamp", "Icon": "🌋", "Cost": {"Magma": 3, "Obsidian": 1}},
+  {"Name": "Sprinkler", "Icon": "💦", "Cost": {"Iron": 4, "Stone": 6, "Coins": 100}, "Effect": "Water", "Range": 14},
+  {"Name": "Beehive", "Icon": "🐝", "Cost": {"Wood": 8, "Mushroom": 4, "Coins": 80}, "Effect": "Grow", "Range": 14, "Boost": 0.25}
+]

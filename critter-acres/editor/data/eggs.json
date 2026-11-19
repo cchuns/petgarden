@@ -1,0 +1,135 @@
+[
+  {
+    "Id": "Mystery",
+    "Name": "Mystery Egg",
+    "Icon": "🥚",
+    "Weights": {
+      "Common": 30,
+      "Rare": 40,
+      "Epic": 22,
+      "Legendary": 8
+    }
+  },
+  {
+    "Id": "Crystal",
+    "Name": "Crystal Egg",
+    "Icon": "💎",
+    "Weights": {
+      "Common": 10,
+      "Rare": 40,
+      "Epic": 35,
+      "Legendary": 15
+    }
+  },
+  {
+    "Id": "Lava",
+    "Name": "Lava Egg",
+    "Icon": "🔥",
+    "Weights": {
+      "Common": 0,
+      "Rare": 25,
+      "Epic": 50,
+      "Legendary": 25
+    }
+  },
+  {
+    "Id": "Star",
+    "Name": "Star Egg",
+    "Icon": "🌟",
+    "Weights": {
+      "Common": 0,
+      "Rare": 20,
+      "Epic": 45,
+      "Legendary": 35
+    }
+  },
+  {
+    "Id": "Harvest",
+    "Name": "Harvest Egg",
+    "Icon": "🍂",
+    "Weights": {
+      "Common": 0,
+      "Rare": 35,
+      "Epic": 45,
+      "Legendary": 20
+    },
+    "Limited": true,
+    "Outfit": "Leaf Crown"
+  },
+  {
+    "Id": "Friend",
+    "Name": "Friend Egg",
+    "Icon": "💕",
+    "Weights": {
+      "Common": 25,
+      "Rare": 40,
+      "Epic": 25,
+      "Legendary": 10
+    },
+    "NoDrop": true
+  },
+  {
+    "Id": "CommonEgg",
+    "Name": "Common Egg",
+    "Icon": "🥚",
+    "Weights": {
+      "Common": 70,
+      "Rare": 25,
+      "Epic": 4.5,
+      "Legendary": 0.5
+    },
+    "NoDrop": true,
+    "Shop": {
+      "Chance": 0.8,
+      "Price": 500
+    }
+  },
+  {
+    "Id": "UncommonEgg",
+    "Name": "Uncommon Egg",
+    "Icon": "🍀",
+    "Weights": {
+      "Common": 40,
+      "Rare": 45,
+      "Epic": 13,
+      "Legendary": 2
+    },
+    "NoDrop": true,
+    "Shop": {
+      "Chance": 0.15,
+      "Price": 1500
+    }
+  },
+  {
+    "Id": "RareEgg",
+    "Name": "Rare Egg",
+    "Icon": "💠",
+    "Weights": {
+      "Common": 10,
+      "Rare": 45,
+      "Epic": 37,
+      "Legendary": 8
+    },
+    "NoDrop": true,
+    "Shop": {
+      "Chance": 0.045,
+      "Price": 5000
+    }
+  },
+  {
+    "Id": "UltraEgg",
+    "Name": "Ultra Rare Egg",
+    "Icon": "👑",
+    "Weights": {
+      "Common": 0,
+      "Rare": 15,
+      "Epic": 50,
+      "Legendary": 35
+    },
+    "NoDrop": true,
+    "Shop": {
+      "Chance": 0.005,
+      "Price": 50000
+    }
+  }
+]

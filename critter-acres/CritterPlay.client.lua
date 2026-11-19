@@ -367,7 +367,7 @@ function renderMap()
 	end
 	travelTile(1, "🏡 My Farm", Color3.fromRGB(120, 200, 95), function() act("GoHome") window.Visible = false end)
 	travelTile(2, "🏛️ Plaza", Color3.fromRGB(255, 190, 90), function() act("Travel", "Plaza") window.Visible = false end)
-	travelTile(3, "🌀 Terrain Portal", Color3.fromRGB(150, 110, 255), function() act("Travel", "TerrainPortal") window.Visible = false end)
+	travelTile(3, "🌀 Explorer's Portal", Color3.fromRGB(150, 110, 255), function() act("Travel", "TerrainPortal") window.Visible = false end)
 	-- farms on this server, most ❤️ first
 	section(3, "🏡 Farms on this server (most ❤️ likes first)", Color3.fromRGB(255, 110, 150))
 	local list = act("Farms") or {}
@@ -548,7 +548,7 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------------- buddy bar (your follower pet): rub, fetch, tricks
-local buddyBar = F(gui, {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -12, 1, -12), Size = UDim2.fromOffset(520, 76),
+local buddyBar = F(gui, {AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -196), Size = UDim2.fromOffset(520, 76),
 	BackgroundColor3 = Color3.fromRGB(45, 35, 70), BackgroundTransparency = 0.15, Visible = false})
 round(buddyBar, 18)
 local buddyList = Instance.new("UIListLayout", buddyBar)

@@ -1,0 +1,250 @@
+[
+  {
+    "Species": "Splashy",
+    "Rarity": "Common",
+    "Class": "Speedy",
+    "Job": "Water",
+    "JobText": "waters crops",
+    "Speed": 9,
+    "Color": "#6ebeff",
+    "Ear": "#468ce6",
+    "Mutate": {
+      "Name": "Juicy",
+      "Chance": 0.02
+    }
+  },
+  {
+    "Species": "Hopsy",
+    "Rarity": "Common",
+    "Class": "Striker",
+    "Job": "Harvest",
+    "JobText": "harvests crops",
+    "Speed": 9,
+    "Color": "#ffcd82",
+    "Ear": "#f0965a"
+  },
+  {
+    "Species": "Sprig",
+    "Rarity": "Common",
+    "Class": "Tank",
+    "Job": "Plant",
+    "JobText": "plants your chosen seed",
+    "Speed": 9,
+    "Color": "#aae68c",
+    "Ear": "#6eb45a"
+  },
+  {
+    "Species": "Drizzle",
+    "Rarity": "Rare",
+    "Class": "Speedy",
+    "Job": "Water",
+    "JobText": "waters crops super fast",
+    "Speed": 15,
+    "Color": "#50dcdc",
+    "Ear": "#28a0aa",
+    "Mutate": {
+      "Name": "Juicy",
+      "Chance": 0.05
+    }
+  },
+  {
+    "Species": "Bloomby",
+    "Rarity": "Rare",
+    "Class": "Tank",
+    "Job": "Grow",
+    "JobText": "makes crops grow faster",
+    "Speed": 10,
+    "Color": "#ffaacd",
+    "Ear": "#ff64a0",
+    "Boost": 0.15,
+    "Mutate": {
+      "Name": "Golden",
+      "Chance": 0.03
+    }
+  },
+  {
+    "Species": "Pockets",
+    "Rarity": "Epic",
+    "Class": "Striker",
+    "Job": "Harvest",
+    "JobText": "harvests with +1 bonus berry",
+    "Speed": 12,
+    "Color": "#cd9b69",
+    "Ear": "#966446",
+    "Bonus": 1
+  },
+  {
+    "Species": "Glimmer",
+    "Rarity": "Epic",
+    "Class": "Speedy",
+    "Job": "Grow",
+    "JobText": "makes crops grow much faster",
+    "Speed": 12,
+    "Color": "#fff096",
+    "Ear": "#ffc850",
+    "Boost": 0.3,
+    "Mutate": {
+      "Name": "Starry",
+      "Chance": 0.03
+    }
+  },
+  {
+    "Species": "Prism",
+    "Rarity": "Legendary",
+    "Class": "Striker",
+    "Job": "Grow",
+    "JobText": "waters and super-grows crops",
+    "Speed": 14,
+    "Color": "#ffffff",
+    "Ear": "#ff96dc",
+    "Boost": 0.5,
+    "Mutate": {
+      "Name": "Prismatic",
+      "Chance": 0.01
+    },
+    "Waters": true,
+    "Rainbow": true
+  },
+  {
+    "Species": "Purrkin",
+    "Rarity": "Rare",
+    "Class": "Striker",
+    "Job": "Harvest",
+    "JobText": "harvests crops (and purrs)",
+    "Speed": 11,
+    "Color": "#ffe1aa",
+    "Ear": "#f0a05a"
+  },
+  {
+    "Species": "Pebbleback",
+    "Rarity": "Common",
+    "Class": "Tank",
+    "Job": "Plant",
+    "JobText": "plants your chosen seed",
+    "Speed": 8,
+    "Color": "#a09687",
+    "Ear": "#6e645a"
+  },
+  {
+    "Species": "Nibblet",
+    "Rarity": "Common",
+    "Class": "Striker",
+    "Job": "Harvest",
+    "JobText": "harvests crops",
+    "Speed": 10,
+    "Color": "#ffa05a",
+    "Ear": "#dc6e3c"
+  },
+  {
+    "Species": "Zippit",
+    "Rarity": "Rare",
+    "Class": "Speedy",
+    "Job": "Water",
+    "JobText": "waters crops super fast",
+    "Speed": 15,
+    "Color": "#ffeb5a",
+    "Ear": "#f0b428"
+  },
+  {
+    "Species": "Thornox",
+    "Rarity": "Rare",
+    "Class": "Tank",
+    "Job": "Plant",
+    "JobText": "plants seeds",
+    "Speed": 9,
+    "Color": "#5aa05a",
+    "Ear": "#326e3c"
+  },
+  {
+    "Species": "Emberclaw",
+    "Rarity": "Epic",
+    "Class": "Striker",
+    "Job": "Harvest",
+    "JobText": "harvests with +1 bonus berry",
+    "Speed": 12,
+    "Color": "#ff6446",
+    "Ear": "#c83228",
+    "Bonus": 1
+  },
+  {
+    "Species": "Frostmaw",
+    "Rarity": "Epic",
+    "Class": "Tank",
+    "Job": "Water",
+    "JobText": "waters crops (they may turn Frosty)",
+    "Speed": 10,
+    "Color": "#aadcff",
+    "Ear": "#6eaae6",
+    "Mutate": {
+      "Name": "Frosty",
+      "Chance": 0.02
+    }
+  },
+  {
+    "Species": "Stormwing",
+    "Rarity": "Legendary",
+    "Class": "Speedy",
+    "Job": "Water",
+    "JobText": "waters crops (they may get Zapped)",
+    "Speed": 16,
+    "Color": "#966eff",
+    "Ear": "#fff078",
+    "Mutate": {
+      "Name": "Zapped",
+      "Chance": 0.01
+    },
+    "Rainbow": false
+  },
+  {
+    "Species": "Viridrake",
+    "Rarity": "Legendary",
+    "Class": "Striker",
+    "Job": "Grow",
+    "JobText": "makes crops grow super fast",
+    "Speed": 14,
+    "Color": "#3c414b",
+    "Ear": "#82ff3c",
+    "Boost": 0.45,
+    "Flyer": true
+  },
+  {
+    "Species": "Bubbloom",
+    "Rarity": "Legendary",
+    "Class": "Speedy",
+    "Job": "Grow",
+    "JobText": "waters and grows crops",
+    "Speed": 13,
+    "Color": "#8cdcff",
+    "Ear": "#ff96d2",
+    "Boost": 0.4,
+    "Waters": true,
+    "Secret": true
+  },
+  {
+    "Species": "Emberfrost",
+    "Rarity": "Legendary",
+    "Class": "Striker",
+    "Job": "Water",
+    "JobText": "waters crops (they may turn Frosty)",
+    "Speed": 13,
+    "Color": "#ff8c78",
+    "Ear": "#96d2ff",
+    "Mutate": {
+      "Name": "Frosty",
+      "Chance": 0.04
+    },
+    "Secret": true
+  },
+  {
+    "Species": "Glitterpaw",
+    "Rarity": "Legendary",
+    "Class": "Speedy",
+    "Job": "Harvest",
+    "JobText": "harvests with +2 bonus berries",
+    "Speed": 14,
+    "Color": "#fff0be",
+    "Ear": "#ffc85a",
+    "Bonus": 2,
+    "Secret": true
+  }
+]

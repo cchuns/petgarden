@@ -92,7 +92,8 @@ local function ensureTip()
 	tipGui.IgnoreGuiInset = true
 	tipGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	tipGui.Parent = pg
-	tipBox = K.frame(tipGui, {Size = UDim2.fromOffset(240, 64), BackgroundColor3 = Color3.fromRGB(55, 42, 70), Visible = false, ZIndex = 100})
+	tipBox = K.frame(tipGui, {Size = UDim2.fromOffset(240, 64), BackgroundColor3 = Color3.fromRGB(55, 42, 70), Visible = false, ZIndex = 100, Active = false})
+	pcall(function() tipBox.Interactable = false end) -- a tooltip never catches clicks meant for the button under it
 	K.round(tipBox, 12)
 	tipTitle = K.text(tipBox, {Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -20, 0, 22), TextColor3 = K.WHITE, ZIndex = 101,
 		TextXAlignment = Enum.TextXAlignment.Left, Max = 20})
@@ -109,9 +110,12 @@ local function showTip(gui, title, body)
 	tipBox.Size = UDim2.fromOffset(250, (body and body ~= "") and 64 or 36)
 	local cam = workspace.CurrentCamera.ViewportSize
 	local p, s = gui.AbsolutePosition, gui.AbsoluteSize
+	-- the tooltip layer ignores the top bar inset; add it only when the button's own ScreenGui doesn't ignore it
+	local sg = gui:FindFirstAncestorOfClass("ScreenGui")
+	local inset = (sg and not sg.IgnoreGuiInset) and game:GetService("GuiService"):GetGuiInset().Y or 0
 	local x = math.clamp(p.X + s.X / 2 - 125, 8, cam.X - 258)
-	local y = p.Y - tipBox.Size.Y.Offset - 4 + 36 -- above the button (36 = top inset)
-	if y < 8 then y = p.Y + s.Y + 40 end
+	local y = p.Y + inset - tipBox.Size.Y.Offset - 6 -- above the button, never on top of it
+	if y < 8 then y = p.Y + inset + s.Y + 6 end -- (no room above: under it)
 	tipBox.Position = UDim2.fromOffset(x, y)
 	tipBox.Visible = true
 end

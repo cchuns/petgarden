@@ -1,6 +1,6 @@
 -- Critter Acres: CritterWorld (StarterPlayerScripts LocalScript)
 --   🎒 Bag: your resources and tool level
---   🔨 Workbench window (prompt on the plaza workbench): Tools, Gear (craft + ⭐ upgrade), Farm (decorations + soil), Toys
+--   🔨 Workbench window (prompt on the plaza workbench): Tools, 🧍 Hero gear (HeroGear GearCraft), Gear (pet gear: craft + ⭐ upgrade), Farm (decorations + soil), Toys
 --   🏡 Decorate mode on your own farm: pick a decoration, a see-through copy follows your mouse/finger,
 --      ↻ rotate, tap to place, ✋ pick things up again
 --   🏷️ Titles: wear the titles you earned
@@ -172,6 +172,7 @@ end
 ---------------------------------------------------------------- 🔨 workbench
 local benchTab = "Tools"
 local gearTier = 1
+local heroTier = "Leaf" -- 🧍 Hero gear tab: which material
 local renderBench
 local openPowerUp -- the ⭐ power-up screen (below)
 local SELECTED, SELECTED_LINE = Color3.fromRGB(255, 225, 130), Color3.fromRGB(230, 170, 50)
@@ -179,7 +180,7 @@ function renderBench()
 	clear()
 	win.setTitle("🔨", "Workbench")
 	win.setSub("Make tools, pet gear and farm things")
-	win.setTabs({{"Tools", "⛏️ Tools", "Better tools break harder trees and rocks"}, {"Gear", "🛡️ Pet gear", "Make gear for your pets and power it up"},
+	win.setTabs({{"Tools", "⛏️ Tools", "Better tools break harder trees and rocks"}, {"Hero", "🧍 Hero gear", "Make gear to wear yourself"}, {"Gear", "🛡️ Pet gear", "Make gear for your pets and power it up"},
 		{"Farm", "🏡 Farm", "Decorations and better soil"}, {"Toys", "🎈 Toys", "Toys to play with friends"}}, benchTab, function(t) benchTab = t renderBench() end)
 	win.setHelp({{"🪵", "Gather wood, stone and more in the wild."}, {"🔨", "Make tools and gear here with what you gathered."},
 		{"⭐", "Power up gear. It can fail, but a fail adds 🍀 luck!"}})
@@ -203,6 +204,47 @@ function renderBench()
 			card(g, lv, t.Icon, t.Name, owned and "✅ You have it" or Data.CostText(t.Cost), (isNext and "Make it") or (owned and "Owned" or "🔒 Make the one before"),
 				isNext and have(t.Cost, info), function() done(act("CraftTool"), ("%s %s made!"):format(t.Icon, t.Name)) end, isNext and need(t.Cost, info) or nil,
 				owned and GREEN or nil)
+		end
+	elseif benchTab == "Hero" then -- 🧍 gear YOU wear (ServerScriptService.HeroGear); wear it from 🛡️ Gear (G)
+		local gi = act("GearInfo") or {}
+		local owned = {}
+		for _, it in gi.Items or {} do owned[it.Name] = it end
+		header("1. Pick a material", "🏆 Gold, Crystal and Magma gear only drop from bosses")
+		local trow = UI.grid(body, UDim2.fromOffset(112, 52), nextOrder())
+		local n = 0
+		for _, tier in Data.HeroTierOrder do
+			if Data.HeroGearCraft[tier] then
+				n += 1
+				local on = heroTier == tier
+				local b = UI.button(trow, {Text = Data.HeroTierIcon[tier] .. " " .. tier, LayoutOrder = n, BackgroundColor3 = on and SELECTED or UI.CARD, Max = 20}, function()
+					heroTier = tier
+					renderBench()
+				end)
+				if on then b.UIStroke.Color, b.UIStroke.Thickness = SELECTED_LINE, 3 end
+			end
+		end
+		header(("2. Make %s gear"):format(heroTier), "Wear it from 🛡️ Gear (G). Make one you have = +1 ⭐")
+		local g = grid(UDim2.fromOffset(170, 220))
+		local i = 0
+		for _, def in Data.HeroGear do
+			if def.Tier == heroTier and def.Craft then
+				i += 1
+				local cost = Data.HeroCraftCost(def)
+				local mine = owned[def.Name]
+				local maxed = mine and mine.Stars >= Data.HeroGearMaxStars
+				local slot = Data.HeroSlotById[def.Slot]
+				local r = Data.WeaponRarityByName[def.Rarity]
+				card(g, i, slot.Icon, def.Display .. (mine and mine.Stars > 0 and (" " .. string.rep("⭐", mine.Stars)) or ""),
+					Data.HeroGearText(Data.HeroGearStats({Name = def.Name, Stars = 0})) .. " · " .. Data.CostText(cost),
+					maxed and "⭐ Max" or (mine and "⭐ +1 star" or "Make it"), not maxed and have(cost, info), function()
+						local res = act("GearCraft", def.Name)
+						if type(res) == "string" then note(res, false) return end
+						local got = res and res.Result or {}
+						note(got.Up and ("⭐ %s got a star!"):format(def.Display)
+							or ("✨ You made: %s %s%s"):format(slot.Icon, def.Display, got.Equipped and " (you're wearing it!)" or ""))
+						renderBench()
+					end, not maxed and need(cost, info) or nil, r and r.Color)
+			end
 		end
 	elseif benchTab == "Gear" then
 		header("1. Pick a material", "Better materials make much stronger gear")
@@ -330,47 +372,71 @@ task.spawn(function()
 	p.Triggered:Connect(function() if openWin ~= "Bench" then openWindow("Bench") end end)
 end)
 
----------------------------------------------------------------- 🏡 decorate mode
+---------------------------------------------------------------- 🏡 decorate mode (build menu, UIKit look)
 -- build mode: Build (place), Move (E), Remove (X). Keys like popular building games:
 --   1-9 pick an item · R rotate (Shift+R back) · E move · X / Delete remove · G grid size · Q cancel · N open / close (B is the bag)
+-- Panel at the bottom middle: 🧱 Build / ✋ Move / 🗑️ Remove on the left, item cards in the middle (owned first, number = key),
+-- ↻ Rotate / ▦ Grid / ✔ Done on the right. On PC a row of key chips sits above it.
+local K = require(ReplicatedStorage:WaitForChild("UIKit"))
 local deco = {on = false, item = nil, ghost = nil, rot = 0, pick = false, remove = false, grid = 1, slots = {}}
-local decoPanel = F(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.new(0.86, 0, 0, 150),
-	BackgroundColor3 = Color3.fromRGB(45, 35, 70), BackgroundTransparency = 0.1, Visible = false, ZIndex = 30})
-round(decoPanel, 18)
-Instance.new("UISizeConstraint", decoPanel).MaxSize = Vector2.new(900, 150)
-local decoHint = L(decoPanel, {Position = UDim2.fromOffset(12, 4), Size = UDim2.new(0.5, -12, 0, 30), ZIndex = 31, TextColor3 = WHITE,
-	TextXAlignment = Enum.TextXAlignment.Left})
--- the key bar sits above the panel so you always see the shortcuts
-local keyBar = F(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -168), Size = UDim2.fromOffset(760, 40), BackgroundTransparency = 1, Visible = false, ZIndex = 30})
-local kbl = Instance.new("UIListLayout", keyBar)
-kbl.FillDirection = Enum.FillDirection.Horizontal
-kbl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-kbl.Padding = UDim.new(0, 6)
-local keyChips = {}
-for i, k in {{"1-9", "Pick"}, {"R", "Rotate"}, {"E", "Move"}, {"X", "Remove"}, {"G", "Grid"}, {"Q", "Cancel"}, {"N", "Done"}} do
-	local chip = F(keyBar, {Size = UDim2.fromOffset(i == 1 and 104 or 98, 38), BackgroundColor3 = Color3.fromRGB(45, 35, 70), BackgroundTransparency = 0.1, LayoutOrder = i, ZIndex = 30})
-	round(chip, 10)
-	local key = L(chip, {Text = k[1], Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(i == 1 and 42 or 30, 30), BackgroundTransparency = 0, BackgroundColor3 = WHITE, ZIndex = 31})
-	round(key, 6)
-	L(chip, {Text = k[2], Position = UDim2.fromOffset(i == 1 and 50 or 38, 4), Size = UDim2.new(1, i == 1 and -54 or -42, 0, 30), TextColor3 = WHITE, ZIndex = 31,
-		TextXAlignment = Enum.TextXAlignment.Left})
-	keyChips[k[2]] = chip
-end
-keyBar.Visible = false
+local PANEL_H, SIDE_W = 196, 150
+local decoPanel = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(0.94, 0, 0, PANEL_H),
+	BackgroundColor3 = K.CREAM, Visible = false, ZIndex = 30, Active = true})
+K.round(decoPanel, 20)
+K.stroke(decoPanel, K.LINE, 3)
+local sizeCap = Instance.new("UISizeConstraint")
+sizeCap.MaxSize = Vector2.new(1040, PANEL_H)
+sizeCap.Parent = decoPanel
+-- left: the 3 modes
+local modeCol = K.frame(decoPanel, {Position = UDim2.fromOffset(12, 12), Size = UDim2.fromOffset(SIDE_W - 12, PANEL_H - 24), BackgroundTransparency = 1, ZIndex = 31})
+K.list(modeCol, Enum.FillDirection.Vertical, 8)
+-- right: rotate, grid, done
+local toolCol = K.frame(decoPanel, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.fromOffset(SIDE_W - 12, PANEL_H - 24),
+	BackgroundTransparency = 1, ZIndex = 31})
+K.list(toolCol, Enum.FillDirection.Vertical, 8)
+-- middle: what to do now + the item cards
+local mid = K.frame(decoPanel, {Position = UDim2.fromOffset(SIDE_W + 6, 10), Size = UDim2.new(1, -2 * SIDE_W - 12, 1, -20), BackgroundTransparency = 1, ZIndex = 31})
+local decoHint = K.text(mid, {Size = UDim2.new(1, 0, 0, 28), ZIndex = 32, Max = 20, TextXAlignment = Enum.TextXAlignment.Left})
 local decoList = Instance.new("ScrollingFrame")
-decoList.Position = UDim2.fromOffset(10, 38)
-decoList.Size = UDim2.new(1, -250, 0, 104)
+decoList.Position = UDim2.fromOffset(0, 34)
+decoList.Size = UDim2.new(1, 0, 1, -34)
 decoList.BackgroundTransparency = 1
 decoList.BorderSizePixel = 0
 decoList.ScrollingDirection = Enum.ScrollingDirection.X
 decoList.AutomaticCanvasSize = Enum.AutomaticSize.X
 decoList.CanvasSize = UDim2.new()
-decoList.ScrollBarThickness = 4
-decoList.ZIndex = 31
-decoList.Parent = decoPanel
-local dl = Instance.new("UIListLayout", decoList)
-dl.FillDirection = Enum.FillDirection.Horizontal
-dl.Padding = UDim.new(0, 8)
+decoList.ScrollBarThickness = 6
+decoList.ScrollBarImageColor3 = K.SOFT
+decoList.ZIndex = 32
+decoList.Parent = mid
+local dl = K.list(decoList, Enum.FillDirection.Horizontal, 10)
+dl.VerticalAlignment = Enum.VerticalAlignment.Top
+local dpad = Instance.new("UIPadding")
+dpad.PaddingLeft, dpad.PaddingTop, dpad.PaddingRight = UDim.new(0, 4), UDim.new(0, 4), UDim.new(0, 4)
+dpad.Parent = decoList
+-- the key chips above the panel (PC only): flash when you press one
+local keyBar = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -PANEL_H - 22), Size = UDim2.fromOffset(780, 40),
+	BackgroundTransparency = 1, Visible = false, ZIndex = 30})
+K.list(keyBar, Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center)
+local keyChips = {}
+for i, k in {{"1-9", "Pick"}, {"R", "Rotate"}, {"E", "Move"}, {"X", "Remove"}, {"G", "Grid"}, {"Q", "Cancel"}, {"N", "Done"}} do
+	local wide = i == 1
+	local chip = K.frame(keyBar, {Size = UDim2.fromOffset(wide and 108 or 102, 38), BackgroundColor3 = K.CARD, LayoutOrder = i, ZIndex = 30})
+	K.round(chip, 12)
+	K.stroke(chip, K.LINE, 2)
+	local key = K.text(chip, {Text = k[1], Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(wide and 44 or 30, 30), BackgroundTransparency = 0,
+		BackgroundColor3 = K.BROWN, TextColor3 = K.WHITE, ZIndex = 31, Max = 18})
+	K.round(key, 8)
+	K.text(chip, {Text = k[2], Position = UDim2.fromOffset(wide and 52 or 38, 4), Size = UDim2.new(1, wide and -56 or -42, 0, 30), ZIndex = 31, Max = 18,
+		TextXAlignment = Enum.TextXAlignment.Left})
+	keyChips[k[2]] = chip
+end
+local function flashKey(name)
+	local chip = keyChips[name]
+	if not chip then return end
+	chip.BackgroundColor3 = K.YELLOW
+	task.delay(0.2, function() chip.BackgroundColor3 = K.CARD end)
+end
 local function myFarm()
 	local farms = root:FindFirstChild("Farms")
 	for _, f in farms and farms:GetChildren() or {} do
@@ -400,6 +466,21 @@ local function setGhost(name)
 	g.Parent = workspace
 	deco.ghost = g
 end
+-- the card picture: the real 3D decoration (built once per kind, then cloned into a ViewportFrame); the emoji if it can't be built
+local decorTpl = {}
+local function decorArt(pic, d)
+	local tpl = decorTpl[d.Name]
+	if tpl == nil then
+		local ok, m = pcall(Builds.Decor, d.Name)
+		tpl = ok and m or false
+		decorTpl[d.Name] = tpl
+	end
+	if tpl then
+		local ok = pcall(CritterUI.ModelView, pic, tpl, {Size = UDim2.fromScale(1, 1), ZIndex = 34}, {Yaw = math.rad(205)})
+		if ok then return end
+	end
+	K.text(pic, {Text = d.Icon, Size = UDim2.fromScale(1, 1), ZIndex = 34, Max = 54})
+end
 local renderDeco
 local modeButtons -- set below with the side buttons
 function renderDeco()
@@ -407,7 +488,7 @@ function renderDeco()
 		if ch:IsA("GuiObject") then ch:Destroy() end
 	end
 	local info = act("CraftInfo") or {DecorInv = {}, Res = {}}
-	-- owned first, then everything else with its price (tap a price to buy it right here)
+	-- owned first, then everything else with its price (tap one to buy it right here)
 	local list = {}
 	for _, d in Data.Decor do
 		if ((info.DecorInv or {})[d.Name] or 0) > 0 then table.insert(list, d) end
@@ -416,47 +497,51 @@ function renderDeco()
 		if ((info.DecorInv or {})[d.Name] or 0) == 0 then table.insert(list, d) end
 	end
 	deco.slots = {}
-	for _, d in list do
+	for i, d in list do
 		local n = (info.DecorInv or {})[d.Name] or 0
 		if n > 0 and #deco.slots < 9 then table.insert(deco.slots, d.Name) end
 		local slotNum = n > 0 and table.find(deco.slots, d.Name) or nil
 		local on = deco.item == d.Name
 		local can = n > 0 or have(d.Cost, info)
-		local b = iconButton(decoList, d.Icon, n > 0 and ("%s x%d"):format(d.Name, n) or ("🛒 " .. Data.CostText(d.Cost)), {Size = UDim2.fromOffset(120, 98), ZIndex = 32,
-			BackgroundColor3 = on and Color3.fromRGB(255, 225, 120) or (n > 0 and CREAM or (can and Color3.fromRGB(215, 245, 205) or GREY))}, function()
-			deco.pick = false
-			if n == 0 then
-				local res = act("BuyDecor", d.Name)
-				if type(res) == "table" and res.Ok then
-					note(("%s %s bought! Tap your farm to place it."):format(d.Icon, d.Name))
-					setGhost(d.Name)
-				else
-					note(type(res) == "table" and res.Error or "❌", false)
+		local color = on and Color3.fromRGB(240, 170, 50) or (n > 0 and K.GREEN or (can and K.BLUE or K.GREY))
+		local card = K.card(decoList, {Order = i, Icon = d.Icon, Name = d.Name, Color = color, Art = function(pic) decorArt(pic, d) end,
+			Sub = n > 0 and ("x%d"):format(n) or ("🛒 " .. Data.CostText(d.Cost)),
+			Tip = d.Icon .. " " .. d.Name,
+			TipText = n > 0 and ("You have %d. Tap, then tap your farm to place it."):format(n)
+				or (can and "Tap to buy it, then place it on your farm." or "You need more to buy this one."),
+			CardFn = function()
+				deco.pick, deco.remove = false, false
+				if n == 0 then
+					local res = act("BuyDecor", d.Name)
+					if type(res) == "table" and res.Ok then
+						K.toast(gui, ("%s %s bought! Tap your farm to place it."):format(d.Icon, d.Name), true)
+						setGhost(d.Name)
+					else
+						K.toast(gui, type(res) == "table" and res.Error or "❌", false)
+					end
+					renderDeco()
+					return
 				end
+				setGhost(deco.item ~= d.Name and d.Name or nil)
 				renderDeco()
-				return
-			end
-			setGhost(deco.item ~= d.Name and d.Name or nil)
-			renderDeco()
-		end)
-		if on then b.UIStroke.Thickness = 4 end
+			end})
+		card.Size = UDim2.fromOffset(112, 138)
+		card.ZIndex = 33
+		for _, ch in card:GetDescendants() do
+			if ch:IsA("GuiObject") then ch.ZIndex = 34 end
+		end
+		if n == 0 and not can then card.BackgroundColor3 = Color3.fromRGB(245, 242, 236) end
 		if slotNum then
-			local num = L(b, {Text = tostring(slotNum), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 0,
-				BackgroundColor3 = Color3.fromRGB(45, 35, 70), TextColor3 = WHITE, ZIndex = 34})
-			round(num, 6)
+			local num = K.text(card, {Text = tostring(slotNum), Position = UDim2.fromOffset(-4, -4), Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 0,
+				BackgroundColor3 = K.BROWN, TextColor3 = K.WHITE, ZIndex = 36, Max = 15})
+			K.round(num, 12)
 		end
 	end
-	decoHint.Text = (deco.remove and "🗑️ REMOVE: tap a decoration to put it back in your bag")
-		or (deco.pick and "✋ MOVE: tap a decoration to pick it up")
-		or (deco.item and ("🧱 BUILD: tap your farm to place %s"):format(deco.item)) or "🧱 BUILD: pick a decoration below (or press 1-9)"
+	decoHint.Text = (deco.remove and "🗑️ Remove: tap a decoration to put it back in your bag")
+		or (deco.pick and "✋ Move: tap a decoration to pick it up")
+		or (deco.item and ("🧱 Build: tap your farm to place %s"):format(deco.item)) or "🧱 Build: pick a decoration (or press 1-9)"
 	if modeButtons then modeButtons() end
 end
-decoList.Size = UDim2.new(1, -384, 0, 104)
-local side = F(decoPanel, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 38), Size = UDim2.fromOffset(364, 104), BackgroundTransparency = 1, ZIndex = 31})
-local sgl = Instance.new("UIGridLayout", side)
-sgl.CellSize = UDim2.fromOffset(116, 48)
-sgl.CellPadding = UDim2.fromOffset(8, 8)
-sgl.SortOrder = Enum.SortOrder.LayoutOrder
 local function setMode(m)
 	deco.pick, deco.remove = m == "Move", m == "Remove"
 	if m ~= "Build" then setGhost(nil) end
@@ -465,50 +550,76 @@ end
 local function rotate(dir) deco.rot = (deco.rot + 45 * (dir or 1)) % 360 end
 local function stopDecorate()
 	deco.on, deco.pick, deco.remove = false, false, false
+	player:SetAttribute("Decorating", nil)
+	game:GetService("ProximityPromptService").Enabled = true
 	setGhost(nil)
 	decoPanel.Visible = false
 	keyBar.Visible = false
 end
+local BTN_H = (PANEL_H - 24 - 16) / 3
 local mb = {}
-mb.Build = B(side, {Text = "🧱 Build", ZIndex = 32, LayoutOrder = 1}, function() setMode("Build") end)
-mb.Move = B(side, {Text = "✋ Move (E)", ZIndex = 32, LayoutOrder = 2}, function() setMode(deco.pick and "Build" or "Move") end)
-mb.Remove = B(side, {Text = "🗑️ Remove (X)", ZIndex = 32, LayoutOrder = 3}, function() setMode(deco.remove and "Build" or "Remove") end)
-B(side, {Text = "↻ Rotate (R)", ZIndex = 32, LayoutOrder = 4}, function() rotate(1) end)
-mb.Grid = B(side, {Text = "▦ Grid 1 (G)", ZIndex = 32, LayoutOrder = 5}, function()
+mb.Build = K.button(modeCol, {Text = "🧱 Build", Size = UDim2.new(1, 0, 0, BTN_H), LayoutOrder = 1, ZIndex = 32,
+	Tip = "🧱 Build", TipText = "Pick a decoration and tap your farm to place it."}, function() setMode("Build") end)
+mb.Move = K.button(modeCol, {Text = "✋ Move", Size = UDim2.new(1, 0, 0, BTN_H), LayoutOrder = 2, ZIndex = 32,
+	Tip = "✋ Move (E)", TipText = "Tap a decoration to pick it up, then put it somewhere else."}, function() setMode(deco.pick and "Build" or "Move") end)
+mb.Remove = K.button(modeCol, {Text = "🗑️ Remove", Size = UDim2.new(1, 0, 0, BTN_H), LayoutOrder = 3, ZIndex = 32,
+	Tip = "🗑️ Remove (X)", TipText = "Tap a decoration to put it back in your bag."}, function() setMode(deco.remove and "Build" or "Remove") end)
+K.button(toolCol, {Text = "↻ Rotate", Size = UDim2.new(1, 0, 0, BTN_H), LayoutOrder = 1, ZIndex = 32,
+	Tip = "↻ Rotate (R)", TipText = "Turn it. Shift + R turns it back."}, function() rotate(1) end)
+mb.Grid = K.button(toolCol, {Text = "▦ Grid 1", Size = UDim2.new(1, 0, 0, BTN_H), LayoutOrder = 2, ZIndex = 32,
+	Tip = "▦ Grid (G)", TipText = "How far it jumps when you move it: 1, 2 or 4 studs."}, function()
 	deco.grid = deco.grid == 1 and 2 or (deco.grid == 2 and 4 or 1)
 	renderDeco()
 end)
-B(side, {Text = "✔ Done (N)", ZIndex = 32, LayoutOrder = 6, BackgroundColor3 = GREEN}, stopDecorate)
+K.button(toolCol, {Text = "✔ Done", Size = UDim2.new(1, 0, 0, BTN_H), LayoutOrder = 3, ZIndex = 32, Kind = "go",
+	Tip = "✔ Done (N)", TipText = "Close decorate mode."}, stopDecorate)
 function modeButtons()
 	local mode = deco.remove and "Remove" or (deco.pick and "Move" or "Build")
 	for name, b in mb do
-		if name ~= "Grid" then b.BackgroundColor3 = name == mode and Color3.fromRGB(255, 225, 120) or CREAM end
+		if name ~= "Grid" then
+			local here = name == mode
+			b.BackgroundColor3 = here and K.YELLOW or K.CARD
+			b.UIStroke.Color = here and K.YELLOW:Lerp(Color3.new(0, 0, 0), 0.15) or K.LINE
+		end
 	end
-	mb.Grid.Text = ("▦ Grid %d (G)"):format(deco.grid)
+	mb.Grid.Text = ("▦ Grid %d"):format(deco.grid)
 end
 local function startDecorate()
 	if not myFarm() then
-		note("You need a farm first!", false)
+		K.toast(gui, "You need a farm first!", false)
 		return
 	end
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local g = myFarm():FindFirstChild("Ground")
 	if not hrp or not g or (hrp.Position - g.Position).Magnitude > 120 then
-		note("🏝️ Go to your island to decorate! Use a 🌀 portal.", false)
+		K.toast(gui, "🏝️ Go to your island to decorate! Use a 🌀 portal.", false)
 		return
 	end
 	deco.on = true
+	player:SetAttribute("Decorating", true) -- the build keys belong to decorate mode now (Combat: G is not ⚔️ Weapons, SkillTree: no 1-5)
+	game:GetService("ProximityPromptService").Enabled = false -- no "E" prompts while building, so E is always ✋ Move
 	deco.pick, deco.remove = false, false
 	decoPanel.Visible = true
-	keyBar.Visible = not UserInputService.TouchEnabled or UserInputService.KeyboardEnabled
+	keyBar.Visible = UserInputService.KeyboardEnabled
 	window.Visible = false
 	renderDeco()
 end
--- where the mouse / finger points on your farm ground
-local function pointOnFarm(screenPos)
+-- The ray under the mouse / finger. ONE way to work it out, used by the preview AND the click, so the item lands exactly where
+-- the see-through copy was. (Before, the preview guessed a 36 px top bar and the click used another position, so with the
+-- newer, taller top bar the placed item could jump one grid square.)
+--   mouse: GetMouseLocation is in viewport space (top bar included) -> ViewportPointToRay
+--   touch: input positions leave the top bar out -> ScreenPointToRay
+local lastTouch = nil -- set while a finger is the pointer
+local function pointerRay()
+	if lastTouch then return camera:ScreenPointToRay(lastTouch.X, lastTouch.Y) end
+	local mp = UserInputService:GetMouseLocation()
+	return camera:ViewportPointToRay(mp.X, mp.Y)
+end
+-- where the pointer is on your farm ground, snapped to the grid
+local function pointOnFarm()
 	local farm = myFarm()
 	if not farm then return nil end
-	local ray = camera:ViewportPointToRay(screenPos.X, screenPos.Y)
+	local ray = pointerRay()
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = {farm.Ground}
@@ -519,12 +630,9 @@ local function pointOnFarm(screenPos)
 	local x, z = math.clamp(math.floor(rel.X / g + 0.5) * g, -23, 23), math.clamp(math.floor(rel.Z / g + 0.5) * g, -23, 23)
 	return farm, x, z
 end
-local lastPointer = Vector2.new(0, 0)
 RunService.RenderStepped:Connect(function()
 	if not (deco.on and deco.ghost) then return end
-	local mp = UserInputService:GetMouseLocation()
-	local pos = UserInputService.TouchEnabled and lastPointer or Vector2.new(mp.X, mp.Y - 36)
-	local farm, x, z = pointOnFarm(pos)
+	local farm, x, z = pointOnFarm()
 	local hl = deco.ghost:FindFirstChild("Fit")
 	if farm then
 		deco.ghost:PivotTo(farm.Ground.CFrame * CFrame.new(x, farm.Ground.Size.Y / 2, z) * CFrame.Angles(0, math.rad(deco.rot), 0))
@@ -534,18 +642,26 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 UserInputService.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch then lastPointer = Vector2.new(input.Position.X, input.Position.Y) end
+	if input.UserInputType == Enum.UserInputType.Touch then
+		lastTouch = Vector2.new(input.Position.X, input.Position.Y)
+	elseif input.UserInputType == Enum.UserInputType.MouseMovement then
+		lastTouch = nil -- back on the mouse
+	end
 end)
 UserInputService.InputBegan:Connect(function(input, processed)
 	if not deco.on or processed then return end
-	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
-	local pos = Vector2.new(input.Position.X, input.Position.Y)
-	lastPointer = pos
+	if input.UserInputType == Enum.UserInputType.Touch then
+		lastTouch = Vector2.new(input.Position.X, input.Position.Y)
+	elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+		lastTouch = nil
+	else
+		return
+	end
 	if deco.pick or deco.remove then -- move: pick it up and carry it · remove: put it back in your bag
 		local farm = myFarm()
 		local folder = farm and farm:FindFirstChild("Decor")
 		if not folder then return end
-		local ray = camera:ViewportPointToRay(pos.X, pos.Y)
+		local ray = pointerRay()
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Include
 		params.FilterDescendantsInstances = {folder}
@@ -556,7 +672,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			local res = act("PickupDecor", m:GetAttribute("DecorId"))
 			if type(res) == "table" and res.Ok then
 				if deco.remove then
-					note(("🗑️ %s is back in your bag"):format(res.Name or "It"))
+					K.toast(gui, ("🗑️ %s is back in your bag"):format(res.Name or "It"), true)
 				else
 					deco.pick = false
 					setGhost(res.Name) -- now it follows you so you can put it somewhere else
@@ -567,15 +683,16 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	if deco.item then
-		local farm, x, z = pointOnFarm(pos)
+		local farm, x, z = pointOnFarm() -- the same spot the preview shows
 		if not farm then return end
+		if deco.ghost then deco.ghost:PivotTo(farm.Ground.CFrame * CFrame.new(x, farm.Ground.Size.Y / 2, z) * CFrame.Angles(0, math.rad(deco.rot), 0)) end
 		local res = act("PlaceDecor", deco.item, x, z, deco.rot)
 		if type(res) == "table" and res.Ok then
 			local left = (res.Info.DecorInv or {})[deco.item] or 0
 			if left <= 0 then setGhost(nil) end
 			renderDeco()
 		elseif type(res) == "table" then
-			note(res.Error, false)
+			K.toast(gui, res.Error, false)
 		end
 	end
 end)
@@ -861,13 +978,7 @@ end
 ---------------------------------------------------------------- the bar buttons
 local bagBtn = iconButton(bar, "🎒", "Bag", {Size = UDim2.fromOffset(78, 64), LayoutOrder = 1, BackgroundColor3 = Color3.fromRGB(230, 210, 170)}, function() openWindow("Bag") end)
 local decoBtn = iconButton(bar, "🏡", "Decorate", {Size = UDim2.fromOffset(78, 64), LayoutOrder = 2, BackgroundColor3 = Color3.fromRGB(190, 240, 170)}, function()
-	if deco.on then
-		deco.on = false
-		setGhost(nil)
-		decoPanel.Visible = false
-	else
-		startDecorate()
-	end
+	if deco.on then stopDecorate() else startDecorate() end
 end)
 bagBtn.Name, decoBtn.Name = "BagButton", "DecorateButton" -- CritterHooks shows them when your farm level unlocks them
 iconButton(bar, "🏷️", "Titles", {Size = UDim2.fromOffset(78, 64), LayoutOrder = 3, BackgroundColor3 = Color3.fromRGB(255, 225, 150)}, function() openWindow("Titles") end)
@@ -984,39 +1095,58 @@ task.spawn(function()
 	end)
 end)
 
----------------------------------------------------------------- 🪧 sign chips: a small white icon above each shop/portal; it opens to show the name when
--- you walk near and fades away when you're right at the door (made on your screen only)
+---------------------------------------------------------------- 🪧 sign chips: a small white icon above each shop/portal/island spot; it opens to show the name when
+-- you walk near and fades away when you're right at the door (made on your screen only).
+-- Chips come from parts in Workspace.CritterAcres.TownChips AND any part with the CollectionService tag "Chip" (island signs).
+-- Attributes on the part (all can change any time):
+--   Icon, Label · Alert = true: yellow and always open (something is ready / waiting for you) · Open = true: always open
+--   Hidden = true: no chip right now · ChipY = studs above the part's middle (tagged parts; default just above the top)
 task.spawn(function()
 	local folder = root:WaitForChild("TownChips", 60)
-	if not folder then return end
 	local TS = game:GetService("TweenService")
 	local TextService = game:GetService("TextService")
-	local chips = {}
-	local function make(p)
-		if not p:IsA("BasePart") then return end
+	local CollectionService = game:GetService("CollectionService")
+	local WHITE_BG, WHITE_LINE = Color3.new(1, 1, 1), Color3.fromRGB(225, 215, 200)
+	local ALERT_BG, ALERT_LINE = Color3.fromRGB(255, 225, 120), Color3.fromRGB(230, 170, 50)
+	local chips = {} -- part -> chip
+	local function fit(c)
+		local p = c.p
 		local label = p:GetAttribute("Label") or ""
+		c.icon.Text = p:GetAttribute("Icon") or ""
+		c.name.Text = label
+		c.w = math.min(46 + TextService:GetTextSize(label, 20, Enum.Font.BuilderSansBold, Vector2.new(1000, 46)).X + 16, 376)
+		if c.tagged then
+			c.bb.StudsOffset = Vector3.new(0, p:GetAttribute("ChipY") or (p.Size.Y / 2 + 1.5), 0)
+		end
+		local alert = p:GetAttribute("Alert") == true
+		c.pill.BackgroundColor3 = alert and ALERT_BG or WHITE_BG
+		c.stroke.Color = alert and ALERT_LINE or WHITE_LINE
+		c.bb.Enabled = p:GetAttribute("Hidden") ~= true and label .. c.icon.Text ~= ""
+		c.state = nil -- redo the open / closed look on the next tick
+	end
+	local function make(p, tagged)
+		if not p:IsA("BasePart") or chips[p] then return end
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Chip"
 		bb.Adornee = p
-		bb.Size = UDim2.fromOffset(320, 52)
-		bb.MaxDistance = 360
+		bb.Size = UDim2.fromOffset(380, 52)
+		bb.MaxDistance = tagged and 160 or 360
 		bb.LightInfluence = 0
 		local pill = Instance.new("Frame")
 		pill.AnchorPoint = Vector2.new(0.5, 0.5)
 		pill.Position = UDim2.fromScale(0.5, 0.5)
 		pill.Size = UDim2.fromOffset(46, 46)
-		pill.BackgroundColor3 = Color3.new(1, 1, 1)
+		pill.BackgroundColor3 = WHITE_BG
 		pill.BackgroundTransparency = 0.05
 		pill.ClipsDescendants = true
 		Instance.new("UICorner", pill).CornerRadius = UDim.new(1, 0)
 		local st = Instance.new("UIStroke")
-		st.Color = Color3.fromRGB(225, 215, 200)
+		st.Color = WHITE_LINE
 		st.Thickness = 1.5
 		st.Parent = pill
 		local icon = Instance.new("TextLabel")
 		icon.BackgroundTransparency = 1
 		icon.Size = UDim2.fromOffset(46, 46)
-		icon.Text = p:GetAttribute("Icon") or ""
 		icon.TextSize = 24
 		icon.Font = Enum.Font.BuilderSans
 		icon.Parent = pill
@@ -1024,7 +1154,6 @@ task.spawn(function()
 		name.BackgroundTransparency = 1
 		name.Position = UDim2.fromOffset(42, 0)
 		name.Size = UDim2.new(1, -50, 1, 0)
-		name.Text = label
 		name.TextSize = 20
 		name.Font = Enum.Font.BuilderSansBold
 		name.TextColor3 = Color3.fromRGB(60, 50, 45)
@@ -1033,27 +1162,45 @@ task.spawn(function()
 		name.Parent = pill
 		pill.Parent = bb
 		bb.Parent = p
-		local w = 46 + TextService:GetTextSize(label, 20, Enum.Font.BuilderSansBold, Vector2.new(400, 46)).X + 16
-		table.insert(chips, {p = p, pill = pill, icon = icon, name = name, stroke = st, w = math.min(w, 316), state = "far"})
+		local c = {p = p, bb = bb, pill = pill, icon = icon, name = name, stroke = st, w = 46, tagged = tagged}
+		chips[p] = c
+		fit(c)
+		for _, a in {"Icon", "Label", "Alert", "Hidden", "ChipY", "Open"} do
+			p:GetAttributeChangedSignal(a):Connect(function() if chips[p] then fit(c) end end)
+		end
 	end
-	for _, c in folder:GetChildren() do make(c) end
-	folder.ChildAdded:Connect(make)
+	if folder then
+		for _, c in folder:GetChildren() do make(c, false) end
+		folder.ChildAdded:Connect(function(c) make(c, false) end)
+	end
+	for _, p in CollectionService:GetTagged("Chip") do make(p, true) end
+	CollectionService:GetInstanceAddedSignal("Chip"):Connect(function(p) make(p, true) end)
+	CollectionService:GetInstanceRemovedSignal("Chip"):Connect(function(p)
+		local c = chips[p]
+		if c then c.bb:Destroy() chips[p] = nil end
+	end)
 	local ti = TweenInfo.new(0.3, Enum.EasingStyle.Quad)
 	while true do
 		task.wait(0.2)
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		if hrp then
-			for _, c in chips do
-				local d = Vector3.new(c.p.Position.X - hrp.Position.X, 0, c.p.Position.Z - hrp.Position.Z).Magnitude
-				local state = d < 11 and "hide" or (d < 36 and "near" or "far")
-				if state ~= c.state then
-					c.state = state
-					local gone = state == "hide" and 1 or 0
-					TS:Create(c.pill, ti, {Size = UDim2.fromOffset(state == "near" and c.w or 46, 46), BackgroundTransparency = state == "hide" and 1 or 0.05}):Play()
-					TS:Create(c.icon, ti, {TextTransparency = gone}):Play()
-					TS:Create(c.name, ti, {TextTransparency = state == "near" and 0 or 1}):Play()
-					TS:Create(c.stroke, ti, {Transparency = gone}):Play()
+			for p, c in chips do
+				if not p:IsDescendantOf(workspace) then
+					c.bb:Destroy()
+					chips[p] = nil
+				elseif c.bb.Enabled then
+					local d = Vector3.new(p.Position.X - hrp.Position.X, 0, p.Position.Z - hrp.Position.Z).Magnitude
+					local open = p:GetAttribute("Alert") == true or p:GetAttribute("Open") == true
+					local state = d < 11 and "hide" or ((d < 36 or open) and "near" or "far")
+					if state ~= c.state then
+						c.state = state
+						local gone = state == "hide" and 1 or 0
+						TS:Create(c.pill, ti, {Size = UDim2.fromOffset(state == "near" and c.w or 46, 46), BackgroundTransparency = state == "hide" and 1 or 0.05}):Play()
+						TS:Create(c.icon, ti, {TextTransparency = gone}):Play()
+						TS:Create(c.name, ti, {TextTransparency = state == "near" and 0 or 1}):Play()
+						TS:Create(c.stroke, ti, {Transparency = gone}):Play()
+					end
 				end
 			end
 		end
@@ -1124,7 +1271,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	elseif key == Enum.KeyCode.G then
 		deco.grid = deco.grid == 1 and 2 or (deco.grid == 2 and 4 or 1)
 		renderDeco()
-		note(("▦ Grid: %d stud%s"):format(deco.grid, deco.grid > 1 and "s" or ""))
+		K.toast(gui, ("▦ Grid: %d stud%s"):format(deco.grid, deco.grid > 1 and "s" or ""), true)
 		flash = "Grid"
 	elseif key == Enum.KeyCode.Q then
 		deco.pick, deco.remove = false, false
@@ -1140,11 +1287,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			flash = "Pick"
 		end
 	end
-	local chip = flash and keyChips[flash]
-	if chip then
-		chip.BackgroundColor3 = Color3.fromRGB(255, 200, 80)
-		task.delay(0.2, function() chip.BackgroundColor3 = Color3.fromRGB(45, 35, 70) end)
-	end
+	if flash then flashKey(flash) end
 end)
 
 ---------------------------------------------------------------- the new menus (CritterMenus) open our screens

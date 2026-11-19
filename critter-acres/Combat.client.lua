@@ -2,8 +2,10 @@
 -- The battle side you see and touch (server: ServerScriptService.Combat):
 --   ⚔️ click / tap (or the big ⚔️ button) to use your weapon: magic weapons shoot a sparkly bolt at the closest mob,
 --      melee weapons swing a bonk in front of you
---   ❤️ hearts above the dock while you're in a wild land; a bonk flashes the screen red and wobbles the camera
---   😵 faint screen -> you wake at the portal with full hearts
+--   ❤️ HP bar at the bottom middle while you're in a wild land (with ⚔️ Hero Lv, ⚡ PWR and 👥 Party PWR under it);
+--      a hit pops a red "-18" over you, flashes the screen red and wobbles the camera
+--   🏷️ mob name tags: "Lv 7 ⚔️ 18" (🏹 = shoots from afar), colored by danger: gray / green / orange / red
+--   😵 faint screen -> you wake at the portal with full HP
 --   ❗ a mob that notices you pops a big "!" and glows red (orange if it's after a friend). Right before it bonks,
 --      the glow flashes bright: that's your cue to step back!
 --   numbers fly off mobs you hit (💥 CRIT for big ones), HP bars, a boss bar, loot popping out, sparkle poofs
@@ -57,6 +59,7 @@ local function tween(o, t, props, style)
 	return tw
 end
 local RARITY = {}
+local STYLE_WORD = {Magic = "🪄 Magic", Melee = "🔨 Melee", Range = "🏹 Range"}
 for _, r in Data.WeaponRarities do RARITY[r.Name] = r end
 
 ---------------------------------------------------------------- mobs you can see
@@ -125,15 +128,21 @@ local function bagTool()
 	end
 end
 
-local function bolt(fromPos, model, color, big)
+-- a sparkly ball (magic) or an arrow / pebble (range) that flies into the mob
+local function bolt(fromPos, model, color, big, style)
 	local c = mobCenter(model)
 	local p = Instance.new("Part")
-	p.Shape = Enum.PartType.Ball
-	p.Size = Vector3.one * (big and 1.4 or 1)
+	local arrow = style == "Range"
+	if arrow then
+		p.Size = Vector3.new(0.3, 0.3, big and 2.4 or 1.9)
+	else
+		p.Shape = Enum.PartType.Ball
+		p.Size = Vector3.one * (big and 1.4 or 1)
+	end
 	p.Material = Enum.Material.Neon
 	p.Color = color
 	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
-	p.CFrame = CFrame.new(fromPos)
+	p.CFrame = arrow and CFrame.lookAt(fromPos, c) or CFrame.new(fromPos)
 	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
 	a0.Position, a1.Position = Vector3.new(0, 0.4, 0), Vector3.new(0, -0.4, 0)
 	a0.Parent, a1.Parent = p, p
@@ -145,8 +154,8 @@ local function bolt(fromPos, model, color, big)
 	tr.LightEmission = 1
 	tr.Parent = p
 	p.Parent = workspace
-	local t = math.clamp((c - fromPos).Magnitude / 140, 0.08, 0.35)
-	tween(p, t, {CFrame = CFrame.new(c)}, Enum.EasingStyle.Linear)
+	local t = math.clamp((c - fromPos).Magnitude / (arrow and 190 or 140), 0.08, 0.35)
+	tween(p, t, {CFrame = arrow and CFrame.lookAt(c, c + (c - fromPos).Unit) or CFrame.new(c)}, Enum.EasingStyle.Linear)
 	task.delay(t, function()
 		local pe = Instance.new("ParticleEmitter")
 		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
@@ -191,6 +200,7 @@ local function attack()
 	end
 	local now = os.clock()
 	local cd = tool:GetAttribute("Cd") or 0.6
+	cd /= (player:GetAttribute("AtkSpeed") or 1) -- ⚡ Rapid Fire (any weapon)
 	if now - lastAtk < cd then return end
 	lastAtk = now
 	local root = hrp()
@@ -220,16 +230,17 @@ local function attack()
 		end
 		if now - hintAt > 8 then
 			hintAt = now
-			toast("⚔️ Weapons work on mobs in the wild lands. Visit the 🌀 Terrain Portal!")
+			toast("⚔️ Weapons work on mobs in the wild lands. Visit the 🌀 Explorer's Portal!")
 		end
 		return
 	end
-	if style == "Magic" then
+	if style == "Magic" or style == "Range" then
+		if style == "Magic" then range *= player:GetAttribute("ReachMul") or 1 end -- 📏 Long Reach
 		local target = pickTarget(range)
 		local tip = tool:FindFirstChild("Handle") and tool.Handle:FindFirstChild("Tip")
 		local from = tip and tip.WorldPosition or (root.Position + Vector3.new(0, 1.5, 0))
 		if target then
-			bolt(from, target, color, tool:GetAttribute("Shiny"))
+			bolt(from, target, color, tool:GetAttribute("Shiny"), style)
 			-- turn toward it
 			local c = mobCenter(target)
 			local to = flat(c - root.Position)
@@ -260,34 +271,37 @@ end
 if player.Character then hookChar(player.Character) end
 player.CharacterAdded:Connect(hookChar)
 
----------------------------------------------------------------- hearts + attack button (wild lands only)
-local hearts = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -98), Size = UDim2.fromOffset(300, 46),
-	BackgroundTransparency = 1, Visible = false})
-K.list(hearts, Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Center)
-local heartIcons = {}
-local function drawHearts()
-	local max = player:GetAttribute("HeartsMax") or Data.Hearts
-	local n = player:GetAttribute("Hearts") or max
-	for i = 1, max do
-		local h = heartIcons[i]
-		if not h then
-			h = K.text(hearts, {Text = "❤️", Size = UDim2.fromOffset(44, 44), LayoutOrder = i, Max = 36})
-			heartIcons[i] = h
-		end
-		local full = i <= n
-		local was = h:GetAttribute("Full")
-		h.Text = full and "❤️" or "🤍"
-		h:SetAttribute("Full", full)
-		if was ~= nil and was ~= full then
-			local s = h:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", h)
-			s.Scale = full and 1.5 or 0.6
-			tween(s, 0.3, {Scale = 1}, Enum.EasingStyle.Back)
-		end
-	end
+---------------------------------------------------------------- ❤️ HP bar + ⚡ PWR + attack button (wild lands only)
+local hpCard = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(380, 52),
+	BackgroundColor3 = K.CREAM, Visible = false})
+K.round(hpCard, 14)
+K.stroke(hpCard, Color3.fromRGB(230, 170, 50), 2)
+local hpBack = K.frame(hpCard, {Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 0, 24), BackgroundColor3 = Color3.fromRGB(80, 60, 50)})
+K.round(hpBack, 12)
+local hpFill = K.frame(hpBack, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = K.GREEN})
+K.round(hpFill, 12)
+local hpText = K.text(hpBack, {Text = "", Size = UDim2.fromScale(1, 1), Max = 18, TextColor3 = K.WHITE, ZIndex = 3})
+hpText.TextStrokeTransparency = 0.3
+local infoText = K.text(hpCard, {Text = "", Position = UDim2.fromOffset(8, 31), Size = UDim2.new(1, -16, 0, 15), Max = 14, TextColor3 = K.SOFT})
+local xpBack = K.frame(hpCard, {Position = UDim2.new(0, 16, 1, -5), Size = UDim2.new(1, -32, 0, 3), BackgroundColor3 = Color3.fromRGB(225, 210, 190)})
+local xpFill = K.frame(xpBack, {Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.fromRGB(150, 120, 255)})
+local function drawHp()
+	local max = player:GetAttribute("HPMax") or 100
+	local hp = math.clamp(player:GetAttribute("HP") or max, 0, max)
+	local k = hp / math.max(1, max)
+	tween(hpFill, 0.2, {Size = UDim2.fromScale(k, 1)})
+	hpFill.BackgroundColor3 = k > 0.5 and K.GREEN or (k > 0.25 and K.YELLOW or K.RED)
+	hpText.Text = ("❤️ %d / %d"):format(hp, max)
+	local lv = player:GetAttribute("HeroLv") or 1
+	local pwr = player:GetAttribute("PWR") or Data.Pwr.Base
+	local party = player:GetAttribute("PartyPWR")
+	infoText.Text = ("⚔️ Hero Lv %d    ⚡ PWR %d%s"):format(lv, pwr, (party and party > pwr) and ("    👥 Party PWR %d"):format(party) or "")
+	local need = Data.HeroNeed(lv)
+	xpFill.Size = UDim2.fromScale(lv >= Data.HeroMax and 1 or math.clamp((player:GetAttribute("HeroXp") or 0) / need, 0, 1), 1)
 end
-player:GetAttributeChangedSignal("Hearts"):Connect(drawHearts)
+for _, a in {"HP", "HPMax", "PWR", "PartyPWR", "HeroLv", "HeroXp"} do player:GetAttributeChangedSignal(a):Connect(drawHp) end
 
-local atkBtn = K.button(gui, {Text = "⚔️", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -110), Size = UDim2.fromOffset(104, 104),
+local atkBtn = K.button(gui, {Text = "⚔️", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -84), Size = UDim2.fromOffset(104, 104),
 	Kind = "special", Max = 54, Visible = false}, attack)
 K.round(atkBtn, 52)
 K.text(atkBtn, {Text = "Attack", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 18), Size = UDim2.fromOffset(110, 24), Max = 18,
@@ -308,7 +322,7 @@ local function toggleMode()
 	if not (inRealm() and player:GetAttribute("RealmBuddy")) then return end
 	setMode(player:GetAttribute("BuddyMode") == "Aggressive" and "Passive" or "Aggressive")
 end
-modeBtn = K.button(gui, {Text = "", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 120, 1, -152), Size = UDim2.fromOffset(250, 42),
+modeBtn = K.button(gui, {Text = "", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0.5, 198, 1, -21), Size = UDim2.fromOffset(210, 42),
 	Max = 20, Visible = false, Tip = "🐾 Buddy mode (V)", TipText = "Tap to switch. Passive: helps only when needed. Aggressive: attacks mobs near you."}, toggleMode)
 local function drawMode()
 	local look = MODE_LOOK[player:GetAttribute("BuddyMode") or "Passive"] or MODE_LOOK.Passive
@@ -324,9 +338,9 @@ end)
 
 local function realmChanged()
 	local on = inRealm()
-	hearts.Visible = on
-	atkBtn.Visible = on
-	if on then drawHearts() end
+	hpCard.Visible = on
+	atkBtn.Visible = on and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled -- phones / tablets only (PC: click to attack)
+	if on then drawHp() end
 	drawMode()
 end
 player:GetAttributeChangedSignal("Realm"):Connect(realmChanged)
@@ -355,7 +369,7 @@ end
 local faint = K.frame(gui, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(255, 215, 235), BackgroundTransparency = 1, ZIndex = 60, Visible = false})
 local faintIcon = K.text(faint, {Text = "😵‍💫", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.fromOffset(200, 140), ZIndex = 61, Max = 110})
 K.text(faint, {Text = "Oops! You fainted!", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(600, 56), ZIndex = 61, Max = 44})
-K.text(faint, {Text = "Waking up at the portal with full ❤️ hearts...", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromOffset(600, 34),
+K.text(faint, {Text = "Waking up at the portal with full ❤️ HP...", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromOffset(600, 34),
 	ZIndex = 61, Max = 24, TextColor3 = K.SOFT})
 
 ---------------------------------------------------------------- over the mobs: ❗, glow, HP bar
@@ -386,8 +400,15 @@ local function decoFor(m)
 	local fill = K.frame(back, {Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), BackgroundColor3 = K.GREEN})
 	K.round(fill, 8)
 	d.bb, d.fill = bb, fill
+	-- 🏷️ "Lv 7 ⚔️ 18" (color = danger for you)
+	local tag = billboard(m, pivotToTop + 2.7, UDim2.fromOffset(170, 26))
+	tag.Enabled = false
+	local tagText = K.text(tag, {Text = "", Size = UDim2.fromScale(1, 1), Max = 20, TextColor3 = K.WHITE})
+	tagText.TextStrokeTransparency = 0.15
+	tagText.TextStrokeColor3 = Color3.fromRGB(50, 35, 30)
+	d.tag, d.tagText = tag, tagText
 	-- ❗
-	local bang = billboard(m, pivotToTop + (m:GetAttribute("Boss") and 4.5 or 3.2), UDim2.fromOffset(70, 70))
+	local bang = billboard(m, pivotToTop + (m:GetAttribute("Boss") and 5.8 or 4.6), UDim2.fromOffset(70, 70))
 	bang.Enabled = false
 	local t = K.text(bang, {Text = "❗", Size = UDim2.fromScale(1, 1), Max = 64})
 	Instance.new("UIScale", t)
@@ -427,6 +448,7 @@ RunService.Heartbeat:Connect(function()
 	end
 	if not root then return end
 	local shown = 0
+	local myLv = math.floor(Data.LevelOfPwr(player:GetAttribute("PWR") or Data.Pwr.Base))
 	for _, m in CollectionService:GetTagged("MobRig") do
 		if m.Parent and m.PrimaryPart and m:GetAttribute("HP") then
 			local near = (m.PrimaryPart.Position - root.Position).Magnitude < 110
@@ -452,6 +474,14 @@ RunService.Heartbeat:Connect(function()
 					d.hl.FillTransparency = f and (0.25 + 0.3 * math.abs(math.sin(now * 20))) or (0.7 + 0.12 * math.sin(now * 5))
 					d.bangText.UIScale.Scale = f and 1.35 or 1
 				end
+				local lv = m:GetAttribute("Lv")
+				if lv then
+					local _, col = Data.MobDanger(lv, myLv)
+					local txt = ("Lv %d   %s %d"):format(lv, m:GetAttribute("Role") == "Ranged" and "🏹" or "⚔️", m:GetAttribute("ATT") or 0)
+					if d.tagText.Text ~= txt then d.tagText.Text = txt end
+					if d.tagText.TextColor3 ~= col then d.tagText.TextColor3 = col end
+				end
+				d.tag.Enabled = lv ~= nil and near and not m:GetAttribute("Dead")
 				local hp, max = m:GetAttribute("HP") or 1, m:GetAttribute("MaxHP") or 1
 				d.bb.Enabled = hp < max and not m:GetAttribute("Dead") and near
 				local k = math.clamp(hp / math.max(1, max), 0, 1)
@@ -464,6 +494,13 @@ end)
 
 ---------------------------------------------------------------- 👑 boss bar
 local bossBar = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 124), Size = UDim2.fromOffset(460, 62), BackgroundColor3 = K.CREAM, Visible = false})
+-- under the land bar (TerrainPortal), which sits under the top-right dock; this gui ignores the top bar inset, so add it
+local function placeBossBar()
+	local y = player:GetAttribute("HudCompact") and 196 or 148
+	bossBar.Position = UDim2.new(0.5, 0, 0, game:GetService("GuiService"):GetGuiInset().Y + y)
+end
+placeBossBar()
+player:GetAttributeChangedSignal("HudCompact"):Connect(placeBossBar)
 K.round(bossBar, 16)
 K.stroke(bossBar, Color3.fromRGB(230, 170, 50), 3)
 local bossName = K.text(bossBar, {Text = "", Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 26), Max = 22})
@@ -490,7 +527,7 @@ task.spawn(function()
 		bossFocus = found
 		bossBar.Visible = found ~= nil
 		if found then
-			bossName.Text = "👑 " .. found.Name:gsub("(%l)(%u)", "%1 %2")
+			bossName.Text = "👑 " .. found.Name:gsub("(%l)(%u)", "%1 %2") .. (found:GetAttribute("Lv") and ("   Lv " .. found:GetAttribute("Lv")) or "")
 			local k = math.clamp((found:GetAttribute("HP") or 0) / math.max(1, found:GetAttribute("MaxHP") or 1), 0, 1)
 			tween(bossFill, 0.15, {Size = UDim2.fromScale(k, 1)})
 		end
@@ -641,6 +678,7 @@ local function starGot(msg)
 	end
 end
 
+local grayTipAt
 remote.OnClientEvent:Connect(function(msg)
 	local k = msg.Kind
 	if k == "Dmg" then
@@ -671,13 +709,22 @@ remote.OnClientEvent:Connect(function(msg)
 		if (msg.Stars or 0) > 0 then
 			task.delay(0.5, function() floatText(msg.Model, ("⭐ x%d"):format(msg.Stars), K.YELLOW, false, 6) end)
 		end
+		-- gray mobs (far below your level) give only a little
+		if msg.Gray and os.clock() - (grayTipAt or -99) > 45 then
+			grayTipAt = os.clock()
+			toast("⚪ Gray mobs are too easy for you: tiny rewards. Try a harder land!")
+		end
 	elseif k == "StarGot" then
 		starGot(msg)
 	elseif k == "Hurt" then
 		flash.BackgroundTransparency = 0.55
 		tween(flash, 0.45, {BackgroundTransparency = 1})
-		shake(msg.N > 1 and 1.4 or 0.8, 0.3)
-		drawHearts()
+		shake(msg.Big and 1.4 or 0.8, 0.3)
+		local r = hrp()
+		if r then floatAt(r.Position + Vector3.new(0, 3.2, 0), "-" .. tostring(msg.N), Color3.fromRGB(255, 90, 90), msg.Big) end
+		drawHp()
+	elseif k == "HeroUp" then
+		bigBanner(("⚔️ Hero Level %d!  🌳 +1 skill point (K)"):format(msg.Lv or 1))
 	elseif k == "Faint" then
 		faint.Visible = true
 		faint.BackgroundTransparency = 1
@@ -698,7 +745,15 @@ remote.OnClientEvent:Connect(function(msg)
 	elseif k == "Bolt" then
 		local from = msg.From and msg.From.Character
 		local h = from and from:FindFirstChild("HumanoidRootPart")
-		if h and msg.Model and msg.Model.Parent then bolt(h.Position + Vector3.new(0, 1.5, 0), msg.Model, msg.Color or K.YELLOW) end
+		if h and msg.Model and msg.Model.Parent then bolt(h.Position + Vector3.new(0, 1.5, 0), msg.Model, msg.Color or K.YELLOW, false, msg.Style) end
+	elseif k == "Hops" then -- 🔀 bouncy bolts / ➰ double shots hop from mob to mob
+		for i, hop in msg.List or {} do
+			task.delay(0.12 * i, function()
+				if hop.From and hop.From.Parent and hop.Model and hop.Model.Parent then
+					bolt(mobCenter(hop.From), hop.Model, msg.Color or K.YELLOW, false, msg.Style)
+				end
+			end)
+		end
 	end
 end)
 
@@ -751,7 +806,8 @@ local function reveal(res)
 	win.frame.Visible = false
 	PackOpen.Play(overlay, {Style = "Pack", Icon = cap.Icon, Title = cap.Name, Color = cap.Color, Footer = footer, Cards = {{
 		Rarity = res.Rarity, Color = RARITY[res.Rarity] and RARITY[res.Rarity].Color, Name = (res.Shiny and "✨ " or "") .. def.Display,
-		Sub = ("💥 %s · %s"):format(def.Style == "Magic" and "🪄 Magic" or "🔨 Melee", def.Icon), Odds = res.Odds, Badges = badges,
+		Sub = ("💥 %d-%d"):format(Data.WeaponRange({Name = res.Name, Stars = res.Stars or 0, Shiny = res.Shiny})) .. " · " .. (STYLE_WORD[def.Style] or "🔨 Melee"),
+		Odds = res.Odds, Badges = badges,
 		Art = function(f, z)
 			local tpl = WEAPONS and WEAPONS:FindFirstChild(res.Name)
 			if tpl and tpl:IsA("Model") then
@@ -776,7 +832,8 @@ function render()
 	win.setTabs({{"Mine", "⚔️ My weapons"}, {"Caps", "🎁 Capsules", nil, nCaps > 0 and nCaps or nil}}, tab, function(t) tab = t render() end)
 	win.setHelp({{"⚔️", "Tap or click to attack mobs in the wild lands. Magic shoots, melee bonks up close!"},
 		{"🎁", "Open capsules for new weapons. Mobs, bosses and chests drop them. Rarer = stronger!"},
-		{"⭐", "Got one you have? It gains a star (+10%). ✨ Shiny ones are +50%!"}})
+		{"💥", "Each hit does damage in the weapon's range, like 66-78."},
+		{"⭐", "Got one you have? It gains a star: the 💥 range goes up 10%. ✨ Shiny ones are +50%!"}})
 	if tab == "Mine" then
 		local list = info.Weapons or {}
 		table.sort(list, function(a, b) return a.Power > b.Power end)
@@ -784,7 +841,8 @@ function render()
 		for _, w in list do if w.Id == info.On then on = w end end
 		if on then
 			local def = Data.WeaponByName[on.Name]
-			win.setSub(("In your hand: %s %s · 💥 %d"):format(def.Icon, def.Display, on.Power))
+			local lo, hi = Data.WeaponRange(on)
+			win.setSub(("In your hand: %s %s · 💥 %d-%d"):format(def.Icon, def.Display, lo, hi))
 		end
 		local g = K.grid(body, UDim2.fromOffset(160, 210), 1)
 		for i, w in list do
@@ -792,8 +850,9 @@ function render()
 			if def then
 				local r = RARITY[def.Rarity]
 				local isOn = w.Id == info.On
+				local lo, hi = Data.WeaponRange(w)
 				K.card(g, {Order = i, Name = (w.Shiny and "✨ " or "") .. def.Display, Color = r.Color,
-					Sub = ("%s · 💥 %d %s"):format(def.Rarity, w.Power, (w.Stars or 0) > 0 and string.rep("⭐", w.Stars) or ""),
+					Sub = ("%s · 💥 %d-%d %s"):format(def.Rarity, lo, hi, (w.Stars or 0) > 0 and string.rep("⭐", w.Stars) or ""),
 					Art = function(pic) weaponArt(pic, w.Name, w.Shiny) end,
 					Button = isOn and {Text = "✅ Holding", Kind = "special"} or {Text = "Equip", Kind = "go"},
 					Fn = function()
@@ -804,8 +863,8 @@ function render()
 						info = act("WeaponInfo")
 						render()
 					end,
-					Tip = def.Icon .. " " .. def.Display, TipText = ("%s weapon · %s · attack every %.2fs"):format(def.Style == "Magic" and "🪄 Magic" or "🔨 Melee",
-						def.Style == "Magic" and ("reaches %d studs"):format(def.Range) or "hits up to 3 mobs in front", def.Cd)})
+					Tip = def.Icon .. " " .. def.Display, TipText = ("%s weapon · %s · attack every %.2fs"):format(STYLE_WORD[def.Style] or "🔨 Melee",
+						def.Style ~= "Melee" and ("reaches %d studs"):format(def.Range) or "hits up to 3 mobs in front", def.Cd)})
 			end
 		end
 	else
@@ -842,12 +901,9 @@ local function openWeapons()
 	win.open()
 	render()
 end
+-- (key G and the dock open the 🛡️ Gear window, StarterPlayerScripts.HeroGear; its ⚔️ Main hand slot opens this one)
 bridge.Event:Connect(function(cmd)
-	if cmd == "Weapons" then openWeapons() end
-end)
-UserInputService.InputBegan:Connect(function(input, gp)
-	if gp then return end
-	if input.KeyCode == Enum.KeyCode.G then
-		if win.frame.Visible then win.close() else openWeapons() end
-	end
+	if cmd == "Weapons" then openWeapons()
+	elseif cmd == "Capsules" then tab = "Caps" openWeapons() -- (the 🎁 button in the Gear window Weapon tab)
+	elseif cmd == "WeaponsClose" and win.frame.Visible then win.close() end
 end)

@@ -1,6 +1,6 @@
 -- Critter Acres: Realms (ServerScriptService)
 -- 🧭 The wild terrains (Meadow, Forest, Peaks, Caves, Volcano) are no longer joined to town.
--- You reach them through the 🌀 Terrain Portal (CritterAcres.TerrainPortal, north of the park):
+-- You reach them through the 🌀 Explorer's Portal (CritterAcres.TerrainPortal, north of the park):
 --   * pick a terrain, go solo or make a party (invite anyone in the server, up to CFG.PartyMax)
 --   * the leader presses Explore: a fresh map is generated from a random seed in a free "slot" far from town
 --     (trail with glades, side pockets, ponds / ice / lava, resource nodes, mobs to battle, a treasure grove)
@@ -30,7 +30,7 @@ local CFG = {
 	Countdown = 4, -- seconds between Explore and the jump (everyone in the party sees it)
 	Slots = 8, SlotX = 9000, SlotZ = 9000, SlotGap = 1200, -- maps are built far away from town and the islands
 	Half = 500, -- maps are 1000 x 1000 studs (about 6x the first version)
-	NearPortal = 45, -- Explore only works next to the Terrain Portal
+	NearPortal = 45, -- Explore only works next to the Explorer's Portal
 	EmptyWipe = 20, -- seconds an empty map waits before it is wiped (so you can pop back in)
 	ChestCoins = {Meadow = 60, Forest = 120, Peaks = 220, Caves = 380, Volcano = 600},
 }
@@ -493,12 +493,19 @@ local function buildMap(run)
 			if t:GetAttribute("Boss") then boss = t elseif t:GetAttribute("Special") then table.insert(special, t) else table.insert(normal, t) end
 		end
 	end
-	local function mob(t, x, z, roam, yaw, herd)
+	-- how deep in the map a spot is: 0 near the start, 2 near the treasure + boss den (Combat: +0..2 mob levels)
+	local trip = math.max(1, (Vector2.new(tx, tz) - Vector2.new(sx, sz)).Magnitude)
+	local function depthAt(wx, wz)
+		return math.clamp(math.floor((Vector2.new(wx, wz) - Vector2.new(sx, sz)).Magnitude / trip * 3), 0, 2)
+	end
+	local function mob(t, x, z, roam, yaw, herd, role)
 		local wx, wy, wz = world(x, z)
 		local m = t:Clone()
 		m:PivotTo(CFrame.new(wx, wy + bottomOffset(t), wz) * CFrame.Angles(0, yaw or rng:NextNumber(0, math.pi * 2), 0))
 		m:SetAttribute("Roam", roam)
 		if herd then m:SetAttribute("Herd", herd) end
+		m:SetAttribute("Depth", depthAt(wx, wz))
+		if role then m:SetAttribute("Role", role) end
 		m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 		for _, d in m:GetDescendants() do
 			if d:IsA("BasePart") then d.Anchored = true end
@@ -538,14 +545,17 @@ local function buildMap(run)
 					for i = 1, rng:NextInteger(3, 5) do
 						local t = (#sp > 0 and rng:NextNumber() < 0.07) and sp[rng:NextInteger(1, #sp)] or first
 						local ang, r = rng:NextNumber(0, math.pi * 2), i == 1 and 0 or rng:NextNumber(2.5, 6)
-						mob(t, cx + math.cos(ang) * r, cz + math.sin(ang) * r, roam, a0, run.key .. id)
+						-- 🏹 some of the group shoot from afar (never the leader, so the group still charges in)
+						local role = i > 1 and rng:NextNumber() < Data.MobRanged.Chance and "Ranged" or nil
+						mob(t, cx + math.cos(ang) * r, cz + math.sin(ang) * r, roam, a0, run.key .. id, role)
 					end
 				else
 					local roam = math.clamp(c.r * 0.45, 6, 12)
-					for _ = 1, rng:NextInteger(2, 4) do
+					for i = 1, rng:NextInteger(2, 4) do
 						local list = (#special > 0 and rng:NextNumber() < 0.07) and special or normal
 						local ang, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, c.r * 0.55)
-						mob(list[rng:NextInteger(1, #list)], c.pos.X + math.cos(ang) * r, c.pos.Y + math.sin(ang) * r, roam)
+						local role = i > 1 and rng:NextNumber() < Data.MobRanged.Chance and "Ranged" or nil
+						mob(list[rng:NextInteger(1, #list)], c.pos.X + math.cos(ang) * r, c.pos.Y + math.sin(ang) * r, roam, nil, nil, role)
 					end
 				end
 			end
@@ -703,7 +713,7 @@ local function partyView(party)
 		table.insert(members, {UserId = m.UserId, Name = m.DisplayName, Leader = m == party.leader, Inside = party.run ~= nil and runOf[m] == party.run})
 	end
 	return {Leader = party.leader.UserId, Terrain = party.terrain, Members = members, Running = party.run ~= nil and party.run.terrain or nil,
-		Seed = party.run and party.run.seed}
+		Seed = party.run and party.run.seed, Mode = party.mode, Tier = party.tier, RunMode = party.run and (party.run.tier and "Dungeon" or "Realm") or nil}
 end
 local function push(player)
 	remote:FireClient(player, {Kind = "Party", Party = partyView(partyOf[player])})
@@ -743,14 +753,19 @@ local function newRun(party)
 	run.folder.Parent = workspace
 	runs[slot] = run
 	party.run = run
-	local ok, err = pcall(buildMap, run)
+	-- 🏰 a dungeon party gets a maze from ServerScriptService.Dungeons instead of a land map
+	if party.mode == "Dungeon" then
+		run.tier, run.paid = party.tier or 1, {}
+		run.folder:SetAttribute("Dungeon", true)
+	end
+	local ok, err = pcall(run.tier and API.buildDungeon or buildMap, run)
 	if not ok then
 		warn("[Realms] map build failed", err)
 		wipe(run)
 		return nil, "🌀 The portal fizzled. Try again!"
 	end
 	API.biomeParts[run.key] = run.ground
-	API.pointPickers[run.key] = function() return pickPoint(run) end
+	API.pointPickers[run.key] = function() return run.pickPoint and run.pickPoint() or pickPoint(run) end
 	run.ready = true
 	function run.leave(player, why)
 		if runOf[player] ~= run then return end
@@ -759,6 +774,7 @@ local function newRun(party)
 		player:SetAttribute("Realm", nil)
 		player:SetAttribute("RealmSeed", nil)
 		player:SetAttribute("RealmBuddy", nil)
+		player:SetAttribute("Dungeon", nil)
 		local prof = API.profiles[player]
 		if prof and run.prevFollow[player] ~= nil then
 			prof.FollowId = run.prevFollow[player] or nil
@@ -786,6 +802,7 @@ local function sendIn(player, run)
 	run.arrived[player] = os.clock()
 	player:SetAttribute("Realm", run.terrain)
 	player:SetAttribute("RealmSeed", run.seed)
+	if run.tier then player:SetAttribute("Dungeon", run.tier) end
 	-- the buddy pet you picked trots along (FollowId), the one that followed you before comes back after
 	local prof = API.profiles[player]
 	local bid = buddyOf[player]
@@ -805,7 +822,7 @@ end
 
 ---------------------------------------------------------------- parties
 local function newParty(player)
-	local party = {leader = player, members = {player}, terrain = "Meadow"}
+	local party = {leader = player, members = {player}, terrain = "Meadow", mode = "Realm", tier = 1}
 	table.insert(parties, party)
 	partyOf[player] = party
 	return party
@@ -831,11 +848,28 @@ local function leaveParty(player, why)
 	end
 	push(player)
 end
-local function nearPortal(player)
+local function nearPortal(player, mode)
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	local tp = root:FindFirstChild("TerrainPortal")
+	local tp = root:FindFirstChild(mode == "Dungeon" and "DungeonPortal" or "TerrainPortal")
 	if not hrp or not tp then return false end
 	return (hrp.Position - tp:GetPivot().Position).Magnitude <= CFG.NearPortal
+end
+-- ⚡ raid energy for a dungeon (once per explorer per run). Returns an error text, or nil when paid.
+local function payEnergy(player, run)
+	if not run.tier or run.paid[player] then return nil end
+	local prof = API.profiles[player]
+	if not prof then return "❔" end
+	if API.updateEnergy then API.updateEnergy(prof) end
+	local cost = Data.Dungeon.Energy
+	if (prof.Energy or 0) < cost then return ("⚡ Out of raid energy! You need %d. It refills 1 every hour."):format(cost) end
+	if prof.Energy >= Data.EnergyMax then prof.EnergyAt = os.time() end
+	prof.Energy -= cost
+	run.paid[player] = true
+	return nil
+end
+local function dungeonName(land, tier)
+	local th = Data.Dungeon.Themes[land] or {}
+	return ("%s %s ⭐%d"):format(th.Icon or "🏰", th.Name or land, tier or 1)
 end
 local function isOpen(prof, name, player)
 	local g = Data.Gates[name]
@@ -857,7 +891,7 @@ local function syncGates(player, prof)
 	player:SetAttribute("Gates", table.concat(open, ","))
 	if new then
 		local def = Data.BiomeByName[new]
-		API.toast(player, ("🔓 The %s %s is open! Visit the 🌀 Terrain Portal to explore it."):format(def and def.Icon or "", new))
+		API.toast(player, ("🔓 The %s %s is open! Visit the 🌀 Explorer's Portal to explore it."):format(def and def.Icon or "", new))
 	end
 end
 task.spawn(function()
@@ -914,8 +948,35 @@ function ACTIONS.RealmInfo(player, prof)
 	table.sort(pets, function(a, b) return (tonumber(a.Power) or 0) > (tonumber(b.Power) or 0) end)
 	local bid = buddyOf[player]
 	if bid and not API.findRec(prof, bid) then buddyOf[player] = nil bid = nil end
+	-- 🏰 dungeons: one per land (same farm level lock), ⭐ tiers open one by one
+	local dungeons = {}
+	for _, b in Data.Biomes do
+		local th = Data.Dungeon.Themes[b.Name]
+		if th then
+			local g = Data.Gates[b.Name]
+			table.insert(dungeons, {Land = b.Name, Name = th.Name, Icon = th.Icon, Color = th.Accent, Open = isOpen(prof, b.Name, player), Level = g and g.Level,
+				Best = (prof.DungeonTier or {})[b.Name] or 0, Mobs = mobsOf(b.Name)})
+		end
+	end
+	if API.updateEnergy then API.updateEnergy(prof) end
 	return {Terrains = list, Party = partyView(partyOf[player]), Players = others, Invites = inv, Max = CFG.PartyMax,
-		Inside = runOf[player] and runOf[player].terrain or nil, Pets = pets, Buddy = bid}
+		Inside = runOf[player] and runOf[player].terrain or nil, Pets = pets, Buddy = bid,
+		Dungeons = dungeons, Tiers = #Data.Dungeon.Tiers, Energy = prof.Energy, EnergyMax = Data.EnergyMax, EnergyCost = Data.Dungeon.Energy}
+end
+
+-- 🏰 pick a dungeon + ⭐ tier (the leader only; tier N needs tier N-1 cleared by the leader)
+function ACTIONS.DungeonPick(player, prof, land, tier)
+	if type(land) ~= "string" or not Data.Dungeon.Themes[land] then return "❔" end
+	tier = math.clamp(math.floor(tonumber(tier) or 1), 1, #Data.Dungeon.Tiers)
+	local party = partyOf[player] or newParty(player)
+	if party.leader ~= player then return "👑 Only the party leader picks the dungeon." end
+	if party.run then return "🌀 Your party is already out exploring. Join them or wait until they are back." end
+	if not isOpen(prof, land, player) then return ("🔒 This dungeon opens at farm level %d. Keep farming!"):format(Data.Gates[land].Level) end
+	local best = (prof.DungeonTier or {})[land] or 0
+	if tier > best + 1 then return ("⭐ Clear ⭐%d first to open ⭐%d!"):format(tier - 1, tier) end
+	party.mode, party.terrain, party.tier = "Dungeon", land, tier
+	pushParty(party)
+	return nil
 end
 
 -- pick the pet that comes along (nil = go alone)
@@ -934,7 +995,7 @@ function ACTIONS.RealmPick(player, prof, name)
 	if party.leader ~= player then return "👑 Only the party leader picks where to go." end
 	if party.run then return "🌀 Your party is already exploring. Join them or wait until they are back." end
 	if not isOpen(prof, name, player) then return ("🔒 The %s opens at farm level %d. Keep farming!"):format(name, Data.Gates[name].Level) end
-	party.terrain = name
+	party.terrain, party.mode = name, "Realm"
 	pushParty(party)
 	return nil
 end
@@ -975,7 +1036,7 @@ function ACTIONS.PartyAccept(player, prof, fromId)
 		if m ~= player then API.toast(m, ("🎉 %s joined the party!"):format(player.DisplayName)) end
 	end
 	pushParty(party)
-	if party.run then return "🌀 Your party is exploring! Walk into the Terrain Portal to join them." end
+	if party.run then return "🌀 Your party is exploring! Walk into the Explorer's Portal to join them." end
 	return nil
 end
 
@@ -1000,22 +1061,35 @@ function ACTIONS.PartyKick(player, prof, userId)
 	return nil
 end
 
-function ACTIONS.RealmEnter(player, prof)
+-- mode = "Realm" (🌀 Explorer's Portal window) or "Dungeon" (🏰 Dungeon Portal window)
+function ACTIONS.RealmEnter(player, prof, mode)
+	mode = mode == "Dungeon" and "Dungeon" or "Realm"
 	if runOf[player] then return "🌀 You are already exploring!" end
-	if not nearPortal(player) then return "🌀 Walk to the Terrain Portal first." end
-	if player:GetAttribute("Carrying") then return "🥚 Finish the egg snatch first!" end
 	local party = partyOf[player] or newParty(player)
+	local where = party.run and (party.run.tier and "Dungeon" or "Realm") or party.mode
+	if not nearPortal(player, where) then
+		return where == "Dungeon" and "🏰 Walk to the Dungeon Portal first." or "🌀 Walk to the Explorer's Portal first."
+	end
+	if player:GetAttribute("Carrying") then return "🥚 Finish the egg snatch first!" end
 	if party.run then -- the party is already out there: hop in
 		if not party.run.ready then return "🌀 The map is still being made..." end
+		local err = payEnergy(player, party.run)
+		if err then return err end
 		sendIn(player, party.run)
 		return nil
 	end
 	if party.leader ~= player then return "👑 Wait for the leader to press Explore." end
 	if party.starting then return nil end
+	if party.mode ~= mode then return mode == "Dungeon" and "🏰 Pick a dungeon first." or "🌀 Pick a land first." end
 	if not isOpen(prof, party.terrain, player) then return ("🔒 The %s opens at farm level %d."):format(party.terrain, Data.Gates[party.terrain].Level) end
+	if mode == "Dungeon" then
+		if API.updateEnergy then API.updateEnergy(prof) end
+		if (prof.Energy or 0) < Data.Dungeon.Energy then return ("⚡ Out of raid energy! You need %d. It refills 1 every hour."):format(Data.Dungeon.Energy) end
+	end
 	party.starting = true
+	local title = mode == "Dungeon" and dungeonName(party.terrain, party.tier) or nil
 	for _, m in party.members do
-		remote:FireClient(m, {Kind = "Go", Terrain = party.terrain, In = CFG.Countdown})
+		remote:FireClient(m, {Kind = "Go", Terrain = party.terrain, In = CFG.Countdown, Title = title})
 	end
 	task.spawn(function()
 		task.wait(CFG.Countdown)
@@ -1027,12 +1101,22 @@ function ACTIONS.RealmEnter(player, prof)
 			return
 		end
 		for _, m in party.members do
-			if m.Parent and not runOf[m] then sendIn(m, run) end
+			if m.Parent and not runOf[m] then
+				local err = payEnergy(m, run)
+				if err then API.toast(m, err) else sendIn(m, run) end
+			end
 		end
 		local def = Data.BiomeByName[run.terrain]
 		for _, m in party.members do
-			API.toast(m, ("%s Welcome to the %s! Map #%d. Find the 🎁 treasure at the end of the trail!"):format(def.Icon, run.terrain, run.seed))
+			if runOf[m] ~= run then continue end
+			if run.tier then
+				API.toast(m, ("%s Welcome to the %s! Find the 🗝️ key, open the 👑 boss door and beat the boss. Light 🔥 campfires on the way!")
+					:format(Data.Dungeon.Themes[run.terrain].Icon, dungeonName(run.terrain, run.tier)))
+			else
+				API.toast(m, ("%s Welcome to the %s! Map #%d. Find the 🎁 treasure at the end of the trail!"):format(def.Icon, run.terrain, run.seed))
+			end
 		end
+		if not next(run.inside) then wipe(run) end
 	end)
 	return nil
 end
@@ -1099,16 +1183,36 @@ end)
 
 
 API.runOf = runOf
-API.realmSpawn = function(player) local run = runOf[player] return run and run.spawnPos end
+-- where you wake up after fainting: the last 🔥 campfire you lit in a dungeon, else the map's start
+API.realmSpawn = function(player)
+	local run = runOf[player]
+	return run and (run.checkpoint and run.checkpoint[player] or run.spawnPos)
+end
+-- shared bits for ServerScriptService.Dungeons
+API.realmHooks = {P = P, chip = chip, exitPortal = exitPortal, treasure = treasure, runOf = runOf, bottomOffset = bottomOffset,
+	placeProp = placeProp, template = template, glowColors = GLOW,
+	resOf = function(land) return RES_OF[land] or {} end}
 API.DEV_EXTRA = API.DEV_EXTRA or {}
 API.DEV_EXTRA.Realm = function(player, prof, name) -- jump straight into a fresh map (Studio dev menu)
 	local party = partyOf[player] or newParty(player)
 	if party.run then return "Already exploring" end
 	party.terrain = Data.BiomeByName[name or ""] and name or party.terrain
+	party.mode = "Realm"
 	local run, err = newRun(party)
 	if not run then return err end
 	sendIn(player, run)
 	return ("🌀 %s map #%d"):format(run.terrain, run.seed)
+end
+API.DEV_EXTRA.Dungeon = function(player, prof, name, tier) -- jump straight into a fresh dungeon (Studio dev menu), no energy
+	local party = partyOf[player] or newParty(player)
+	if party.run then return "Already exploring" end
+	party.terrain = Data.Dungeon.Themes[name or ""] and name or party.terrain
+	party.mode, party.tier = "Dungeon", math.clamp(tonumber(tier) or 1, 1, #Data.Dungeon.Tiers)
+	local run, err = newRun(party)
+	if not run then return err end
+	run.paid[player] = true
+	sendIn(player, run)
+	return "🏰 " .. dungeonName(run.terrain, run.tier)
 end
 
 print("[Realms] ready")

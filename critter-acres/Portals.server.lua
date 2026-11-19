@@ -37,7 +37,7 @@ end
 -- 🌀 the portal picker: kind = Home / Town / Place (biome name) / Visit (userId) / Event
 function ACTIONS.PortalGo(player, prof, kind, arg)
 	if not nearPortal(player) then return MSG end
-	if player:GetAttribute("Carrying") then return "🥚 Bring the golden egg to the 🌀 Terrain Portal to win!" end
+	if player:GetAttribute("Carrying") then return "🥚 Bring the golden egg to the 🌀 Explorer's Portal to win!" end
 	if kind == "Home" then
 		return raw.GoHome(player, prof)
 	elseif kind == "Town" then

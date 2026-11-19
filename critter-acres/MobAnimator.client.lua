@@ -296,12 +296,36 @@ local function update(r, now, dt)
 			end
 			r.act = a
 		end
+		-- 👑 boss specials (ServerScriptService.BossSkills): Skill = Summon / Slam / Throw / Breath / Charge
+		local sn = m:GetAttribute("SkillN")
+		if sn ~= r.skillN then
+			if r.skillN ~= nil and not dead and m:GetAttribute("Skill") then
+				r.state, r.stateAt, r.fired, r.firedN = "skill", now, false, 0
+				r.skill = m:GetAttribute("Skill")
+				r.skillDur = m:GetAttribute("SkillDur") or 2
+				r.skillHit = m:GetAttribute("SkillHit") or r.skillDur * 0.5
+				r.skillGap = m:GetAttribute("SkillGap") or 0
+				r.skillShots = m:GetAttribute("SkillShots") or 1
+			end
+			r.skillN = sn
+		end
+		if r.state == "skill" and (now > r.stateAt + r.skillDur or dead) then r.state = "idle" end
 		if r.state == "attack" and now > r.nextThink then r.state = "idle" end
 		local d = Vector3.new(sg.X - r.pos.X, 0, sg.Z - r.pos.Z)
 		-- (no snapping: a chase goal can be far away, e.g. when you zap it from range; it always walks there.
 		--  It only hurries a bit when it fell behind, like after playing its attack move.)
 		r.absSpeed = (m:GetAttribute("Spd") or info.speed * u) * (d.Magnitude > 14 and 1.25 or 1)
-		if r.state ~= "attack" and not dead and d.Magnitude > 0.25 then
+		if r.state == "skill" then
+			-- stays in its pose; still slides to Goal (the Charge dash moves it this way)
+			if d.Magnitude > 0.2 then
+				r.pos += d.Unit * math.min(d.Magnitude, (m:GetAttribute("Spd") or info.speed * u) * dt)
+				if r.lift and now > (r.rayAt or 0) then
+					r.rayAt = now + 0.12
+					local g = groundAt(r.pos)
+					if g then r.groundY = g + r.lift end
+				end
+			end
+		elseif r.state ~= "attack" and not dead and d.Magnitude > 0.25 then
 			r.state, r.goal = "walk", Vector3.new(sg.X, r.pos.Y, sg.Z)
 		elseif r.state == "walk" then
 			r.state = "idle"
@@ -359,13 +383,16 @@ local function update(r, now, dt)
 				if g then r.groundY = g + r.lift end
 			end
 		end
+	elseif r.state == "skill" and m:GetAttribute("SkillDir") then -- aim the lane / fan / charge
+		local d = m:GetAttribute("SkillDir")
+		goalYaw = math.atan2(-d.X, -d.Z)
 	elseif near then -- turn to watch you
 		local d = near - r.pos
 		goalYaw = math.atan2(-d.X, -d.Z)
 	end
 	if r.lift then r.pos = Vector3.new(r.pos.X, r.pos.Y + (r.groundY - r.pos.Y) * math.min(1, dt * 8), r.pos.Z) end
 	local dy = (goalYaw - r.yaw + math.pi) % TAU - math.pi
-	r.yaw += dy * math.min(1, dt * (walking and 6 or 2.5))
+	r.yaw += dy * math.min(1, dt * ((walking or r.state == "skill") and 6 or 2.5))
 	local stepRate = ({slide = 3, stomp = 4, waddle = 11, scuttle = 16, walk = 8})[info.move] or 9
 	if walking then r.step += dt * stepRate * speedMul end
 
@@ -594,6 +621,85 @@ local function update(r, now, dt)
 		end
 	end
 
+	-- 👑 boss specials (timing from the server: hit = when it lands / first throw, gap = time between throws)
+	local armSide -- Throw: only one arm swings (they take turns)
+	if r.state == "skill" then
+		local k, dur, hit, s = now - r.stateAt, r.skillDur, r.skillHit, r.skill
+		local out = 1 - smooth((k - dur + 0.35) / 0.35) -- ease back to normal at the end
+		local function puff(every, n) if r.fx and now > (r.puffAt or 0) then r.puffAt = now + every r.fx:Emit(n) end end
+		hy, hr = hy * 0.3, 0
+		if s == "Summon" then -- ☄️ rears back, arms (or wings) high, roars at the sky and shakes; points down as they fall
+			local up = smooth(k / 0.6) * out
+			local point = smooth((k - hit + 0.4) / 0.3) * out
+			pitch += 0.3 * up - 0.35 * point
+			hp += 0.5 * up - 0.6 * point
+			y += 0.08 * u * up
+			roll += math.sin(k * 38) * 0.035 * up * (1 - point)
+			armRot = -2.6 * up + 1.4 * point + math.sin(k * 11) * 0.25 * up
+			flapAmp, flapRate = 0.7, 16
+			crestLift = 0.06 * u * up
+			tailWag, tailRate = 0.5, 16
+			mouth = up
+			eyes = 1 - 0.4 * up + 0.4 * point
+			if up > 0.5 and k < hit then puff(0.22, 6) end
+		elseif s == "Slam" then -- 💫 crouches, leaps high, lands with a squash
+			local crouch = smooth(k / 0.45) * (1 - smooth((k - (hit - 0.6)) / 0.1))
+			local air = bump(k, hit - 0.6, hit)
+			local land = smooth((k - hit) / 0.06) * (1 - smooth((k - hit - 0.2) / 0.5))
+			y += -0.08 * u * crouch + 0.75 * u * air - 0.06 * u * land
+			pitch += 0.12 * crouch + 0.15 * air - 0.22 * land
+			armRot = -0.7 * crouch - 2.3 * air + 0.9 * land
+			legRot = 0.5 * air
+			flapAmp, flapRate = 0.8, 22
+			mouth = math.max(0.4 * crouch, air, 0.7 * land)
+			eyes = 1 - 0.5 * crouch - 0.6 * land
+			crestLift = 0.05 * u * land
+			if k > hit and not r.fired then r.fired = true if r.fx then r.fx:Emit(45) end end
+		elseif s == "Throw" then -- 🔥 winds back and flings, one arm after the other
+			local wind, fling = 0, 0
+			for i = 1, r.skillShots do
+				local ti = hit + (i - 1) * r.skillGap
+				local wv, fv = bump(k, ti - 0.45, ti), bump(k, ti, ti + 0.3)
+				if wv + fv > wind + fling then wind, fling, armSide = wv, fv, (i % 2 == 0) and 1 or -1 end
+				if k > ti and (r.firedN or 0) < i then r.firedN = i if r.fx then r.fx:Emit(12) end end
+			end
+			if r.skillGap == 0 then armSide = nil end -- fan: both arms at once
+			armRot = -2.0 * wind + 1.1 * fling
+			pitch += 0.1 * wind - 0.18 * fling
+			hp += 0.2 * wind - 0.25 * fling
+			roll += 0.08 * wind * (armSide or 0)
+			flapAmp, flapRate = 0.5 + 0.4 * fling, 12
+			mouth = math.max(0.3 * wind, fling)
+			eyes = 1 - 0.3 * fling
+		elseif s == "Breath" then -- ❄️ / 🔥 head back, big breath in, then a long blast forward
+			local wind = smooth(k / (hit * 0.8)) * (1 - smooth((k - hit) / 0.12))
+			local blow = smooth((k - hit) / 0.12) * out
+			hp += 0.45 * wind - 0.3 * blow
+			pitch += 0.15 * wind - 0.12 * blow
+			y += 0.05 * u * wind
+			z += 0.05 * u * wind - 0.06 * u * blow
+			armRot = -0.8 * wind + 0.3 * blow
+			flapAmp, flapRate = 0.55, 10
+			mouth = 0.35 * wind + blow
+			eyes = 1 - 0.5 * blow
+			if blow > 0.4 then puff(0.07, 4) end
+		elseif s == "Charge" then -- 🐻 lowers its head, paws the ground, then barrels forward
+			local ready = smooth(k / 0.4) * (1 - smooth((k - hit) / 0.1))
+			local dash = smooth((k - hit) / 0.1) * out
+			pitch -= 0.2 * ready + 0.35 * dash
+			z += 0.12 * u * ready
+			hp -= 0.25 * ready + 0.15 * dash
+			legRot = math.sin(k * (dash > 0.5 and 26 or 14)) * (0.3 * ready + 0.6 * dash)
+			armRot = math.sin(k * 26) * 0.6 * dash - 0.4 * ready
+			y += math.abs(math.sin(k * 26)) * 0.05 * u * dash
+			flapAmp, flapRate = 0.7, 24
+			mouth = 0.3 * ready + dash
+			eyes = 1 - 0.45 * ready
+			tailWag, tailRate = 0.4, 18
+			if dash > 0.3 then puff(0.12, 3) end
+		end
+	end
+
 	-- defeated: a happy dizzy spin up into sparkles (Combat removes it a moment later)
 	if dead then
 		r.deadAt = r.deadAt or now
@@ -635,7 +741,8 @@ local function update(r, now, dt)
 		local A = L[n]
 		if A then
 			local swing = (A.side < 0) and armRot or -armRot
-			if r.state == "attack" then swing = armRot end
+			if r.state == "attack" or r.state == "skill" then swing = armRot end
+			if armSide and A.side ~= armSide then swing = -0.3 end -- Throw: the other arm rests
 			place(r, bodyCF, n, CFrame.Angles(swing, 0, 0))
 		end
 	end

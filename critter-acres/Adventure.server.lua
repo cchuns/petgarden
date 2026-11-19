@@ -1,11 +1,11 @@
 -- Critter Acres: Adventure (ServerScriptService)
 -- Things to do out in the world:
 --   🚧 Biome gates  - the Forest / Peaks / Caves / Volcano open by farm level (no coins). The lands themselves
---                     are reached through the 🌀 Terrain Portal (Realms).
+--                     are reached through the 🌀 Explorer's Portal (Realms).
 --   🦝 Raccoons     - sneak onto your farm toward ripe crops. Tap one before it runs off for a prize!
 --   🎣 Fishing      - pond in the meadow: wait for the bite, tap fast. Fish book + coins + rare chests
 --   ✨ Rare fruit   - drops somewhere in the world now and then; first one to grab it keeps it
---   🥚 Egg Snatch   - world event: carry the golden egg to the 🌀 Terrain Portal, others can tag you to take it
+--   🥚 Egg Snatch   - world event: carry the golden egg to the 🌀 Explorer's Portal, others can tag you to take it
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -97,7 +97,7 @@ local function gatesAttr(player, prof)
 end
 local gateLabels = {}
 for name, g in Data.Gates do
-	if not g.At then continue end -- lands now open from the 🌀 Terrain Portal screen (Realms)
+	if not g.At then continue end -- lands now open from the 🌀 Explorer's Portal screen (Realms)
 	local m = Instance.new("Model")
 	m.Name = "Gate_" .. name
 	local dir = (Vector3.new(0, 0, 0) - g.At) * Vector3.new(1, 0, 1)
@@ -407,7 +407,7 @@ end
 local function eggSnatch(e)
 	local center = Vector3.new(0, API.GROUND_Y, 20)
 	workspace:SetAttribute("EventPos", center)
-	API.notifyAll("🥚 EGG SNATCH! Grab the golden egg in the plaza and carry it to the 🌀 Terrain Portal! Others can tag you to take it!")
+	API.notifyAll("🥚 EGG SNATCH! Grab the golden egg in the plaza and carry it to the 🌀 Explorer's Portal! Others can tag you to take it!")
 	local goalGate = root:FindFirstChild("TerrainPortal") and root.TerrainPortal:FindFirstChild("Gate")
 	local goal = goalGate and goalGate.Position or Vector3.new(4, API.GROUND_Y, -72)
 	local egg = P(stuff, {Name = "SnatchEgg", Size = Vector3.new(2.4, 3, 2.4), CFrame = CFrame.new(center + Vector3.new(0, 2, 0)), Color = Color3.fromRGB(255, 210, 60),
@@ -466,7 +466,7 @@ local function eggSnatch(e)
 			give(who)
 			API.notifyAll(("🥚 %s grabbed the egg!"):format(who.DisplayName))
 		end)
-		API.toast(player, "🥚 You have the egg! RUN to the 🌀 Terrain Portal! 🏃")
+		API.toast(player, "🥚 You have the egg! RUN to the 🌀 Explorer's Portal! 🏃")
 	end
 	local grab = API.makePrompt(egg, "🥚 Grab the egg!", "Golden Egg")
 	grab.MaxActivationDistance = 12

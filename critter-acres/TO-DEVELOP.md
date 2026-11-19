@@ -31,6 +31,7 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [x] Equipment: 1 slot per battler, 5 gear types, Common to Legendary, dropped by raids
 - [x] Energy: 1 per raid, 10 max, +1 per hour
 - [x] 🛠 Dev menu (Studio only): coins, berries, energy, battlers, workers + buildings, gear set, +1 level, fill book, ready eggs, finish timers, fast timers, spawn by rarity, start any weather, reset save
+- [x] 🛠 Dev menu v2: tabbed UIKit window; Hero Level up/set, full HP, no damage, Q/R ready, max skills, give any Melee / Range / Mage weapon
 
 ## Done: pet profiles and feeding
 - [x] Seed buying removed: planting is free (plots grow Puffberries); fancier berries come from expeditions and Golden harvests
@@ -52,6 +53,9 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [ ] **Open world**: gather wood, stone and crystals; craft tools and buildings at a bench; place them freely on your own land; areas unlocked by crafted items (bridge, warm boots, lantern, heat charm); day and night; pets help gather. Phases: A) valley + Mushroom Forest + gathering + crafting, B) a plot for each player + free decorating, C) remaining areas + day/night, D) pet helpers + battles
 - [ ] **Co-op dungeons** (1 to 4 players): one per area (Mushroom Burrow, Frozen Halls, Crystal Mines, Magma Core); 5 to 10 minute runs with rooms, puzzles, chests and a boss; players and pet teams fight together; Normal/Hard/Nightmare; no losing items; revive friends
 - [ ] **World bosses**: hourly server event; everyone who helps gets a reward; clearly telegraphed attacks
+- [x] **Numbers instead of hearts** (CK 2026-11-17): built (PWR pass)
+- [x] **Level-scaled lands + party PWR + ranged mobs** (CK 2026-11-17): built (PWR pass)
+- [x] **Skill tree** (CK 2026-11-17): built: 3 branches, 50 points, Q/R moves, Range weapons
 - [ ] **Boss Eggs**: exclusive pets, most Mythics come from here, co-op luck bonus, boss lucky meter, first-clear trophies and titles
 - [ ] If eggs are ever sold for Robux, show the odds (Roblox rule); prefer eggs earned by playing
 
@@ -120,3 +124,22 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [x] Journey, playtime gifts, calendar, luck meter, naming, favorite food, friend luck, gifting, badges (ids needed), golden dash, mailbox, greeting, juicy coin fly, farm visitor
 - [x] Moon Pot, piles, legendary shout + aura, raccoons, egg snatch, growing up, silhouettes (book already shows ❔), trading, gates, NPC quests, "1 in X", Farm Power, Best Friends Nest + secret pets, fishing, fashion show, rare fruit, riding
 - [ ] Friend's pet in your nest, badge ids, new seasonal egg after 2026-12-01
+- [x] ⚡ Skill bar: 5 slots, drag moves in from the tree, keys 1-5 in the lands (2026-11-17)
+- [ ] 🌳 More skills for the tree (CK plans to expand it: just add Kind "Active" entries + cast effect + FX)
+
+## 🏰 Dungeon Portal (CK, 2026-11-19): all ideas approved, built in stages (see RESUME "Dungeon Portal" / "Dungeons v3")
+- [x] Stage 1+2: a new 🏰 Dungeon Portal in town, 5 dungeons (one per land), ⭐1–3 tiers, ⚡ raid energy, 1–4 players, campfires, key + boss gate, boss arena, dead-end chests
+- [x] v2 (CK): stairs / ledges with one-way ✨ silver chests, obby jump pads, zones with their own look + signs + landmarks; attacks / mobs / shots blocked by walls
+- [x] v3 (CK: "not square rooms, a proper map"): natural terrain. Clearings + winding trails, cliffs with bushes / trees as walls, cave ceilings on Slime Cave / Crystal Mines / Lava Keep, open sky on Root Tunnels / Ice Halls, rock-pillar ledges + rope bridges
+- [ ] **Playtest v3 first** (map building is brand new and has never run)
+- [ ] Stage 3 (next, recommended order): ⚔️ boss gear sets (2-piece bonus + glow), 📜 furniture scrolls → dungeon-only decorations (🧱 placeholders, then shapes) + a scroll album + a guaranteed drop, 🙈 hidden chests (push-through bushes, breakable cracked rock), 🏃 runaway chest, ⭐ run score, 🎉 first-clear bonus
+- [ ] Stage 4: easy puzzles (torches, colour tiles, push block), levers / secret spots, a 🐾 buddy pet that sniffs out chests, a 🗺️ minimap that fills in + a glowing trail home, cute traps (slime puddles, bounce pads, snowballs), the boss calls helpers halfway
+- [ ] Small: Dev menu "jump into dungeon X ⭐N" button (`API.DEV_EXTRA.Dungeon` exists); check the CritterSync plugin shows after a Studio restart; build real shapes for any 🧱 placeholder decorations CK adds
+
+## 🛡️ Hero Gear (CK, 2026-11-19): player slots built first, dungeon paused
+- [x] 6 slots: head, body, legs, boots, main hand (weapon), off hand. Crafted low tiers, boss-only high tiers. Gear shows on the character; a cosmetic look overrides it.
+- [ ] CK playtests: crafting, wearing, the look on the avatar, PWR/HP changes, boss drops
+- [ ] 👗 Cosmetics shop (sell looks later; only 2 sample looks now, given by the dev menu)
+- [ ] Critter Editor tab for Hero Gear (pieces, looks, sets, numbers)
+- [ ] Dungeon stage 3: each dungeon boss gets its OWN set (uses Data.HeroSets / Set field)
+- [ ] Maybe: off-hand variety (orbs / books for mages), a "hide helmet" toggle, 3D previews on the gear cards

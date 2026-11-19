@@ -1,5 +1,5 @@
 -- Critter Acres: TerrainPortal (StarterPlayerScripts LocalScript)
--- 🌀 The Terrain Portal screen (walk into the portal north of the park, or use its prompt):
+-- 🌀 The Explorer's Portal screen (walk into the portal north of the park, or use its prompt):
 --   1 pick a land (each opens at a farm level)   2 who's coming (solo, or invite people in the server)
 --   3 bring one buddy pet along (it follows you and zaps mobs), or go alone   then 🌀 Explore!
 -- Also: 💌 invite popups, the countdown + "building a new map" cover, the in-map bar (🚪 Leave) and a soft look per land
@@ -47,9 +47,10 @@ local function isFriend(userId)
 end
 
 ---------------------------------------------------------------- the window
-local win = K.window(gui, {Icon = "🌀", Title = "Terrain Portal", Max = Vector2.new(900, 600)})
+local win = K.window(gui, {Icon = "🌀", Title = "Explorer's Portal", Max = Vector2.new(900, 600)})
 local info -- last RealmInfo from the server
 local render
+local mode = "Realm" -- which portal opened the window: "Realm" (🌀 Explorer's Portal) or "Dungeon" (🏰 Dungeon Portal)
 local function refresh()
 	info = act("RealmInfo")
 	if win.frame.Visible then render() end
@@ -60,7 +61,15 @@ local function mobText(t)
 	for _, m in t.Mobs or {} do
 		table.insert(names, (m.Boss and "👑 " or (m.Special and "✨ " or "")) .. m.Name)
 	end
-	return #names > 0 and ("Mobs here: " .. table.concat(names, ", ")) or "Mobs to battle, things to gather"
+	local band = Data.LandLevels[t.Name]
+	local lv = band and ("Mob Lv %d-%d (more friends = higher). Best with ⚡ PWR %d+. "):format(band[1], band[2], math.floor(Data.PwrOfLevel(band[1]) + 0.5)) or ""
+	return lv .. (#names > 0 and ("Mobs here: " .. table.concat(names, ", ")) or "Mobs to battle, things to gather")
+end
+
+-- ⚡ PWR of a player in this server (Combat sets the attribute)
+local function pwrOf(userId)
+	local p = Players:GetPlayerByUserId(userId)
+	return p and p:GetAttribute("PWR") or 0
 end
 
 local function landCard(parent, t, order, picked, leader)
@@ -81,8 +90,11 @@ local function landCard(parent, t, order, picked, leader)
 		Art = function(pic)
 			pic.BackgroundColor3 = t.Color:Lerp(Color3.new(1, 1, 1), open and 0.45 or 0.8)
 			K.text(pic, {Text = open and t.Icon or "🔒", Size = UDim2.fromScale(1, 0.72), Max = 54})
-			K.text(pic, {Text = open and ("⚔️ %d mobs"):format(#(t.Mobs or {})) or ("Farm Lv %d"):format(t.Level or 1), Position = UDim2.fromScale(0, 0.7),
-				Size = UDim2.fromScale(1, 0.28), TextColor3 = K.SOFT, Max = 14})
+			local band = Data.LandLevels[t.Name]
+			local rec = band and math.floor(Data.PwrOfLevel(band[1]) + 0.5)
+			local weak = rec and (player:GetAttribute("PWR") or 0) < rec
+			K.text(pic, {Text = open and (band and ("Lv %d-%d  ⚡%d+"):format(band[1], band[2], rec) or ("⚔️ %d mobs"):format(#(t.Mobs or {}))) or ("Farm Lv %d"):format(t.Level or 1),
+				Position = UDim2.fromScale(0, 0.7), Size = UDim2.fromScale(1, 0.28), TextColor3 = (open and weak) and Color3.fromRGB(220, 70, 70) or K.SOFT, Max = 14})
 		end,
 		Tip = t.Icon .. " " .. t.Name, TipText = mobText(t)})
 	if picked then
@@ -103,12 +115,48 @@ local function inviteRow(body, order, inv)
 	return r
 end
 
+-- 🏰 a dungeon card: the theme, its farm-level lock and ⭐ tier buttons (tier N opens after clearing N-1)
+local function dungeonCard(parent, t, order, party, leader)
+	local picked = party and party.Mode == "Dungeon" and party.Terrain == t.Land
+	local tierNow = picked and party.Tier or nil
+	local card = K.card(parent, {Order = order, Name = t.Icon .. " " .. t.Name, Sub = t.Open and (t.Best > 0 and ("Best: ⭐%d cleared"):format(t.Best) or "Not cleared yet") or ("🔒 Farm Lv %d"):format(t.Level or 1),
+		Color = t.Color,
+		Art = function(pic)
+			pic.BackgroundColor3 = t.Color:Lerp(Color3.new(1, 1, 1), t.Open and 0.45 or 0.8)
+			K.text(pic, {Text = t.Open and t.Icon or "🔒", Size = UDim2.fromScale(1, 0.62), Max = 50})
+			-- ⭐ buttons along the bottom of the picture
+			local tiers = info.Tiers or 3
+			for k = 1, tiers do
+				local can = t.Open and k <= t.Best + 1
+				local on = tierNow == k
+				K.button(pic, {Text = can and ("⭐" .. k) or "🔒", Position = UDim2.new((k - 1) / tiers, 3, 0.66, 0), Size = UDim2.new(1 / tiers, -6, 0.3, 0),
+					Kind = on and "special" or (can and "go" or "no"), Max = 16, ZIndex = pic.ZIndex + 2,
+					Tip = ("⭐%d"):format(k), TipText = can and ("Bigger maze, more mobs and better loot with every ⭐") or ("Clear ⭐%d first"):format(k - 1)}, function()
+					if not leader then toast("👑 The party leader picks the dungeon.", false) return end
+					if not t.Open then toast(("🔒 This dungeon opens at farm level %d. Keep farming!"):format(t.Level or 1), false) return end
+					if done(act("DungeonPick", t.Land, k)) then refresh() end
+				end)
+			end
+		end,
+		Tip = t.Icon .. " " .. t.Name, TipText = mobText({Name = t.Land, Mobs = t.Mobs})})
+	if picked then card.UIStroke.Color, card.UIStroke.Thickness = Color3.fromRGB(230, 170, 50), 5 end
+	return card
+end
+
 function render()
 	if not info then return end
-	win.setTitle("🌀", "Terrain Portal")
+	local dungeon = mode == "Dungeon"
+	if dungeon then
+		win.setTitle("🏰", "Dungeon Portal")
+		win.setHelp({{"🏰", "Pick a dungeon and a ⭐ level. Every trip builds a brand-new maze!"}, {"🗝️", "Find the key, open the boss door, beat the boss for its treasure."},
+			{"💰", "Chests hide in the corners. Light 🔥 campfires: if you faint, you wake up there."},
+			{"⚡", ("Costs %d raid energy each. It refills 1 every hour."):format(info.EnergyCost or 1)}})
+	else
+		win.setTitle("🌀", "Explorer's Portal")
+		win.setHelp({{"🗺️", "Pick a wild land. Every trip makes a brand-new map!"}, {"🐾", "Go alone or bring a buddy pet. Invite friends too (up to 4)."},
+			{"⚔️", "Battle mobs, gather, beat the boss and find the treasure at the end of the trail."}})
+	end
 	win.setTabs({})
-	win.setHelp({{"🗺️", "Pick a wild land. Every trip makes a brand-new map!"}, {"🐾", "Go alone or bring a buddy pet. Invite friends too (up to 4)."},
-		{"⚔️", "Battle mobs, gather, beat the boss and find the treasure at the end of the trail."}})
 	win.clear()
 	local body = win.body
 	local party = info.Party
@@ -117,7 +165,10 @@ function render()
 	local pick = party and party.Terrain or "Meadow"
 	local def = Data.BiomeByName[pick] or Data.Biomes[1]
 	local n = party and #party.Members or 1
-	win.setSub(n > 1 and ("👫 Party of %d · %s %s"):format(n, def.Icon, pick) or ("🙂 Solo · %s %s"):format(def.Icon, pick))
+	-- the dungeon picked for this window (only counts when the party is in dungeon mode)
+	local dPicked = party and party.Mode == "Dungeon" and Data.Dungeon.Themes[pick]
+	local placeName = dungeon and (dPicked and ("%s %s ⭐%d"):format(dPicked.Icon, dPicked.Name, party.Tier or 1) or "🏰 Pick a dungeon") or (def.Icon .. " " .. pick)
+	win.setSub((n > 1 and ("👫 Party of %d · "):format(n) or "🙂 Solo · ") .. placeName)
 
 	local buddyName
 	for _, pet in info.Pets or {} do
@@ -125,26 +176,51 @@ function render()
 	end
 	-- the go button first, so it's always easy to find
 	local goBtn, goFn
+	local enter = function() if done(act("RealmEnter", mode)) then win.close() end end
+	local cost = info.EnergyCost or 1
 	if info.Inside then
 		goBtn, goFn = {Text = "🚪 Leave map", Kind = "careful"}, function() act("RealmLeave") win.close() end
 	elseif party and party.Running then
-		goBtn, goFn = {Text = "🌀 Join them!", Kind = "go"}, function() if done(act("RealmEnter")) then win.close() end end
+		goBtn, goFn = {Text = party.RunMode == "Dungeon" and ("🏰 Join! ⚡" .. cost) or "🌀 Join them!", Kind = "go"}, enter
+	elseif leader and dungeon and not dPicked then
+		goBtn, goFn = {Text = "🏰 Pick first", Kind = "no"}, function() toast("🏰 Pick a dungeon and a ⭐ below first.", false) end
 	elseif leader then
-		goBtn, goFn = {Text = "🌀 Explore!", Kind = "go"}, function() if done(act("RealmEnter")) then win.close() end end
+		goBtn, goFn = {Text = dungeon and ("🏰 Enter! ⚡" .. cost) or "🌀 Explore!", Kind = "go"}, enter
 	else
-		goBtn, goFn = {Text = "⏳ Leader", Kind = "no"}, function() toast("👑 Wait for the party leader to press Explore.", false) end
+		goBtn, goFn = {Text = "⏳ Leader", Kind = "no"}, function() toast("👑 Wait for the party leader to press go.", false) end
 	end
-	K.row(body, {Order = 0, Icon = def.Icon, Title = party and party.Running and ("Your party is in the %s!"):format(party.Running) or ("Explore the %s"):format(pick),
-		Sub = (n > 1 and ("👫 %d explorers"):format(n) or "🙂 Just you") .. (buddyName and (" + 🐾 " .. buddyName) or "") .. " · a brand-new map every trip", Button = goBtn, Fn = goFn})
+	local title
+	if party and party.Running then
+		local th = party.RunMode == "Dungeon" and Data.Dungeon.Themes[party.Running]
+		title = th and ("Your party is in the %s %s!"):format(th.Icon, th.Name) or ("Your party is in the %s!"):format(party.Running)
+	else
+		title = dungeon and (dPicked and ("Into the %s"):format(placeName) or "Pick a dungeon below") or ("Explore the %s"):format(pick)
+	end
+	local sub = (n > 1 and ("👫 %d explorers"):format(n) or "🙂 Just you") .. (buddyName and (" + 🐾 " .. buddyName) or "")
+	sub ..= dungeon and ("  ·  ⚡ %d/%d raid energy"):format(info.Energy or 0, info.EnergyMax or 10) or " · a brand-new map every trip"
+	K.row(body, {Order = 0, Icon = dungeon and "🏰" or def.Icon, Title = title, Sub = sub, Button = goBtn, Fn = goFn})
 
 	-- invites waiting for me
 	for i, inv in info.Invites or {} do inviteRow(body, i, inv) end
 
-	K.header(body, "1  Pick a land", 10)
-	local g = K.grid(body, UDim2.fromOffset(156, 200), 11)
-	for i, t in info.Terrains do landCard(g, t, i, t.Name == pick, leader and not (party and party.Running)) end
+	if dungeon then
+		K.header(body, "1  Pick a dungeon and a ⭐", 10, "Clear a ⭐ to open the next one")
+		local g = K.grid(body, UDim2.fromOffset(176, 214), 11)
+		for i, t in info.Dungeons or {} do dungeonCard(g, t, i, party, leader and not (party and party.Running)) end
+	else
+		K.header(body, "1  Pick a land", 10)
+		local g = K.grid(body, UDim2.fromOffset(156, 200), 11)
+		for i, t in info.Terrains do landCard(g, t, i, t.Name == pick and not (party and party.Mode == "Dungeon"), leader and not (party and party.Running)) end
+	end
 
-	K.header(body, ("2  Who's coming?  (%d/%d)"):format(n, info.Max or 4), 20)
+	-- 👥 party PWR = everyone added up: the mobs scale to it
+	local partyPwr = 0
+	if party then
+		for _, m in party.Members do partyPwr += pwrOf(m.UserId) end
+	else
+		partyPwr = player:GetAttribute("PWR") or 0
+	end
+	K.header(body, ("2  Who's coming?  (%d/%d)   👥 Party PWR %d"):format(n, info.Max or 4, partyPwr), 20)
 	if party and n > 1 then
 		for i, m in party.Members do
 			local isMe = m.UserId == me
@@ -154,11 +230,11 @@ function render()
 			elseif leader then
 				btn, fn = {Text = "Remove", Kind = "no"}, function() act("PartyKick", m.UserId) refresh() end
 			end
-			K.row(body, {Order = 20 + i, Icon = m.Leader and "👑" or "🙂", Title = m.Name .. (isMe and " (you)" or ""),
+			K.row(body, {Order = 20 + i, Icon = m.Leader and "👑" or "🙂", Title = ("%s%s   ⚡ %d"):format(m.Name, isMe and " (you)" or "", pwrOf(m.UserId)),
 				Sub = m.Inside and "🌀 Exploring now" or (m.Leader and "Leader: picks the land" or "Ready to go"), Button = btn, Fn = fn})
 		end
 	else
-		K.row(body, {Order = 21, Icon = "🙂", Title = "You (solo)", Sub = "Invite people below to make a party"})
+		K.row(body, {Order = 21, Icon = "🙂", Title = ("You (solo)   ⚡ %d"):format(player:GetAttribute("PWR") or 0), Sub = "Invite friends: more PWR = stronger mobs, better loot"})
 	end
 
 	-- 3: one buddy pet (or just you)
@@ -217,7 +293,8 @@ function render()
 	if shown == 0 then K.empty(body, "👫", "Nobody else to invite here yet. Invite a friend to the game!", nil, nil, 90) end
 end
 
-local function openPortal()
+local function openPortal(which)
+	mode = which == "Dungeon" and "Dungeon" or "Realm"
 	refresh()
 	win.open()
 	render()
@@ -229,7 +306,7 @@ local popup
 local function showInvite(msg)
 	if popup then popup:Destroy() end
 	local def = Data.BiomeByName[msg.Terrain] or {Icon = "🌀"}
-	local f = K.frame(gui, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 120), Size = UDim2.fromOffset(330, 150), BackgroundColor3 = K.CREAM, ZIndex = 60})
+	local f = K.frame(gui, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, player:GetAttribute("HudCompact") and 290 or 160), Size = UDim2.fromOffset(330, 150), BackgroundColor3 = K.CREAM, ZIndex = 60})
 	K.round(f, 18)
 	K.stroke(f, Color3.fromRGB(230, 170, 50), 3)
 	popup = f
@@ -274,12 +351,12 @@ local function countdown(msg)
 	TweenService:Create(f, TweenInfo.new(0.4), {BackgroundTransparency = 0.6}):Play()
 	for s = msg.In or 4, 1, -1 do
 		if cover ~= f then return end
-		big.Text = ("%s Off to the %s in %d..."):format(def.Icon, msg.Terrain, s)
+		big.Text = msg.Title and ("🏰 Into the %s in %d..."):format(msg.Title, s) or ("%s Off to the %s in %d..."):format(def.Icon, msg.Terrain, s)
 		small.Text = "🌀 Get ready, explorers!"
 		task.wait(1)
 	end
 	TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-	big.Text = "✨ Making a brand-new map..."
+	big.Text = msg.Title and "✨ Building a brand-new dungeon..." or "✨ Making a brand-new map..."
 	small.Text = "Every trip is different!"
 	local t = os.clock()
 	while cover == f and not player:GetAttribute("Realm") and os.clock() - t < 45 do task.wait(0.1) end
@@ -302,25 +379,25 @@ remote.OnClientEvent:Connect(function(msg)
 	end
 end)
 
----------------------------------------------------------------- walk into the portal (or use its prompt)
-task.spawn(function()
-	local tp = root:WaitForChild("TerrainPortal", 60)
+---------------------------------------------------------------- walk into a portal (or use its prompt)
+local function hookPortal(modelName, which, actionText, objectText)
+	local tp = root:WaitForChild(modelName, 60)
 	if not tp then return end
 	local gate = tp:WaitForChild("Gate", 30)
 	if not gate then return end
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "🌀 Explore"
-	prompt.ObjectText = "Terrain Portal"
+	prompt.ActionText = actionText
+	prompt.ObjectText = objectText
 	prompt.MaxActivationDistance = 16
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = gate
-	prompt.Triggered:Connect(openPortal)
+	prompt.Triggered:Connect(function() openPortal(which) end)
 	local armed = true
 	gate.Touched:Connect(function(hit)
 		local char = player.Character
 		if armed and char and hit:IsDescendantOf(char) then
 			armed = false
-			openPortal()
+			openPortal(which)
 		end
 	end)
 	while true do
@@ -330,11 +407,17 @@ task.spawn(function()
 			if not hrp or (hrp.Position - gate.Position).Magnitude > 16 then armed = true end
 		end
 	end
-end)
+end
+task.spawn(hookPortal, "TerrainPortal", "Realm", "🌀 Explore", "Explorer's Portal")
+task.spawn(hookPortal, "DungeonPortal", "Dungeon", "🏰 Dungeons", "Dungeon Portal")
 
 ---------------------------------------------------------------- in-map bar + the look of each land
-local barF = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(440, 56), BackgroundColor3 = K.CREAM,
+local barF = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 84), Size = UDim2.fromOffset(440, 56), BackgroundColor3 = K.CREAM,
 	Visible = false, ZIndex = 30})
+-- under the top-right dock (2 columns on small screens = taller) and clear of the level pills on the left
+local function placeBar() barF.Position = UDim2.new(0.5, 0, 0, player:GetAttribute("HudCompact") and 132 or 84) end
+placeBar()
+player:GetAttributeChangedSignal("HudCompact"):Connect(placeBar)
 K.round(barF, 16)
 local barStroke = K.stroke(barF, K.LINE, 3)
 local barText = K.text(barF, {Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -150, 0, 28), ZIndex = 31, TextXAlignment = Enum.TextXAlignment.Left, Max = 22})
@@ -386,7 +469,15 @@ local function applyLook()
 		fxPart.Parent = nil
 		return
 	end
-	barText.Text = ("%s %s  ·  Map #%s"):format(def.Icon, land, tostring(player:GetAttribute("RealmSeed") or "?"))
+	local dTier = player:GetAttribute("Dungeon")
+	local th = dTier and Data.Dungeon.Themes[land]
+	if th then
+		barText.Text = ("%s %s ⭐%d"):format(th.Icon, th.Name, dTier)
+		barSub.Text = "🗝️ Find the key · 👑 beat the boss · 🔥 light campfires"
+	else
+		barText.Text = ("%s %s  ·  Map #%s"):format(def.Icon, land, tostring(player:GetAttribute("RealmSeed") or "?"))
+		barSub.Text = "🎁 Find the treasure at the end of the trail!"
+	end
 	barStroke.Color = def.Color
 	local L = LOOK[land] or LOOK.Meadow
 	cc.Enabled = true
@@ -404,6 +495,7 @@ local function applyLook()
 end
 player:GetAttributeChangedSignal("Realm"):Connect(applyLook)
 player:GetAttributeChangedSignal("RealmSeed"):Connect(applyLook)
+player:GetAttributeChangedSignal("Dungeon"):Connect(applyLook)
 applyLook()
 RunService.RenderStepped:Connect(function()
 	if fx.Enabled then

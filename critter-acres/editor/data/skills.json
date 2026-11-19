@@ -1,0 +1,316 @@
+[
+  {
+    "Id": "BigBonk",
+    "Branch": "Melee",
+    "Name": "Big Bonk",
+    "Icon": "🔨",
+    "Lv": 1,
+    "Max": 5,
+    "Row": 1,
+    "Col": 1.5,
+    "Kind": "Dmg",
+    "Per": 0.08,
+    "Say": "+{Per%}% melee damage"
+  },
+  {
+    "Id": "ToughHide",
+    "Branch": "Melee",
+    "Name": "Tough Hide",
+    "Icon": "🛡️",
+    "Lv": 5,
+    "Max": 5,
+    "Req": "BigBonk",
+    "Row": 2,
+    "Col": 1,
+    "Kind": "HP",
+    "Per": 0.06,
+    "Say": "+{Per%}% max HP"
+  },
+  {
+    "Id": "SpinSwing",
+    "Branch": "Melee",
+    "Name": "Spin Swing",
+    "Icon": "🌀",
+    "Lv": 10,
+    "Max": 5,
+    "Req": "BigBonk",
+    "Row": 2,
+    "Col": 2,
+    "Kind": "Spin",
+    "Per": 0.2,
+    "Say": "Every 3rd swing hits all around you, {Per%+100}% damage"
+  },
+  {
+    "Id": "ShieldUp",
+    "Branch": "Melee",
+    "Name": "Shield Up",
+    "Icon": "🧱",
+    "Lv": 18,
+    "Max": 5,
+    "Req": "ToughHide",
+    "Row": 3,
+    "Col": 1,
+    "Kind": "Guard",
+    "Per": 0.04,
+    "Say": "-{Per%}% damage taken"
+  },
+  {
+    "Id": "GroundPound",
+    "Branch": "Melee",
+    "Name": "Ground Pound",
+    "Icon": "💥",
+    "Lv": 25,
+    "Max": 5,
+    "Req": "SpinSwing",
+    "Row": 3,
+    "Col": 2,
+    "Kind": "Active",
+    "Cd": 12,
+    "R": 12,
+    "Scale": {
+      "Dmg": {
+        "Base": 1.5,
+        "Per": 0.3
+      },
+      "Stun": {
+        "Base": 0.8,
+        "Per": 0.2
+      }
+    },
+    "Say": "Stomp! Circle around you, {Dmg%}% damage, {Stun.1}s dizzy"
+  },
+  {
+    "Id": "GiantMode",
+    "Branch": "Melee",
+    "Name": "Giant Mode",
+    "Icon": "🦖",
+    "Lv": 40,
+    "Max": 3,
+    "Req": "GroundPound",
+    "Row": 4,
+    "Col": 1.5,
+    "Kind": "Active",
+    "Cd": 40,
+    "Big": true,
+    "Scale": {
+      "Secs": {
+        "Base": 4,
+        "Per": 2
+      },
+      "Boost": {
+        "Base": 0,
+        "Per": 0.2
+      }
+    },
+    "Say": "Grow big for {Secs}s, +{Boost%}% damage"
+  },
+  {
+    "Id": "SharpShot",
+    "Branch": "Range",
+    "Name": "Sharp Shot",
+    "Icon": "🎯",
+    "Lv": 1,
+    "Max": 5,
+    "Row": 1,
+    "Col": 1.5,
+    "Kind": "Dmg",
+    "Per": 0.08,
+    "Say": "+{Per%}% range damage"
+  },
+  {
+    "Id": "QuickFeet",
+    "Branch": "Range",
+    "Name": "Quick Feet",
+    "Icon": "👟",
+    "Lv": 5,
+    "Max": 5,
+    "Req": "SharpShot",
+    "Row": 2,
+    "Col": 1,
+    "Kind": "Speed",
+    "Per": 0.04,
+    "Say": "+{Per%}% walk speed in the lands"
+  },
+  {
+    "Id": "DoubleShot",
+    "Branch": "Range",
+    "Name": "Double Shot",
+    "Icon": "➰",
+    "Lv": 10,
+    "Max": 5,
+    "Req": "SharpShot",
+    "Row": 2,
+    "Col": 2,
+    "Kind": "Double",
+    "Per": 0.1,
+    "Say": "{Per%}% chance to hit a 2nd mob too"
+  },
+  {
+    "Id": "EagleEye",
+    "Branch": "Range",
+    "Name": "Eagle Eye",
+    "Icon": "🦅",
+    "Lv": 18,
+    "Max": 5,
+    "Req": "QuickFeet",
+    "Row": 3,
+    "Col": 1,
+    "Kind": "Crit",
+    "Per": 0.03,
+    "Say": "+{Per%}% crit chance"
+  },
+  {
+    "Id": "ArrowRain",
+    "Branch": "Range",
+    "Name": "Arrow Rain",
+    "Icon": "🌧️",
+    "Lv": 25,
+    "Max": 5,
+    "Req": "DoubleShot",
+    "Row": 3,
+    "Col": 2,
+    "Kind": "Active",
+    "Cd": 12,
+    "R": 10,
+    "Scale": {
+      "Dmg": {
+        "Base": 1.2,
+        "Per": 0.3
+      }
+    },
+    "Say": "Arrows rain on a circle, {Dmg%}% damage"
+  },
+  {
+    "Id": "RapidFire",
+    "Branch": "Range",
+    "Name": "Rapid Fire",
+    "Icon": "⚡",
+    "Lv": 40,
+    "Max": 3,
+    "Req": "ArrowRain",
+    "Row": 4,
+    "Col": 1.5,
+    "Kind": "Active",
+    "Cd": 40,
+    "Big": true,
+    "Scale": {
+      "Secs": {
+        "Base": 6,
+        "Per": 0
+      },
+      "Speed": {
+        "Base": 2,
+        "Per": 1
+      }
+    },
+    "Say": "Attack {Speed}x faster for {Secs}s"
+  },
+  {
+    "Id": "SparkPower",
+    "Branch": "Mage",
+    "Name": "Spark Power",
+    "Icon": "✨",
+    "Lv": 1,
+    "Max": 5,
+    "Row": 1,
+    "Col": 1.5,
+    "Kind": "Dmg",
+    "Per": 0.08,
+    "Say": "+{Per%}% magic damage"
+  },
+  {
+    "Id": "LongReach",
+    "Branch": "Mage",
+    "Name": "Long Reach",
+    "Icon": "📏",
+    "Lv": 5,
+    "Max": 5,
+    "Req": "SparkPower",
+    "Row": 2,
+    "Col": 1,
+    "Kind": "Reach",
+    "Per": 0.06,
+    "Say": "+{Per%}% magic range"
+  },
+  {
+    "Id": "BouncyBolt",
+    "Branch": "Mage",
+    "Name": "Bouncy Bolt",
+    "Icon": "🔀",
+    "Lv": 10,
+    "Max": 5,
+    "Req": "SparkPower",
+    "Row": 2,
+    "Col": 2,
+    "Kind": "Bounce",
+    "Scale": {
+      "Hops": {
+        "Base": 0,
+        "Per": 0.5,
+        "Round": "up"
+      },
+      "Part": {
+        "Base": 0.4,
+        "Per": 0.1
+      }
+    },
+    "Say": "Bolts bounce to {Hops} more mob(s), {Part%}% damage"
+  },
+  {
+    "Id": "HealingSparkle",
+    "Branch": "Mage",
+    "Name": "Healing Sparkle",
+    "Icon": "💖",
+    "Lv": 18,
+    "Max": 5,
+    "Req": "LongReach",
+    "Row": 3,
+    "Col": 1,
+    "Kind": "Heal",
+    "Per": 0.01,
+    "Say": "Magic hits heal you {Per%}% of max HP"
+  },
+  {
+    "Id": "MiniMeteor",
+    "Branch": "Mage",
+    "Name": "Mini Meteor",
+    "Icon": "☄️",
+    "Lv": 25,
+    "Max": 5,
+    "Req": "BouncyBolt",
+    "Row": 3,
+    "Col": 2,
+    "Kind": "Active",
+    "Cd": 14,
+    "R": 10,
+    "Scale": {
+      "Dmg": {
+        "Base": 2,
+        "Per": 0.4
+      }
+    },
+    "Say": "A meteor lands on a circle, {Dmg%}% damage"
+  },
+  {
+    "Id": "FreezeRing",
+    "Branch": "Mage",
+    "Name": "Freeze Ring",
+    "Icon": "❄️",
+    "Lv": 40,
+    "Max": 3,
+    "Req": "MiniMeteor",
+    "Row": 4,
+    "Col": 1.5,
+    "Kind": "Active",
+    "Cd": 40,
+    "R": 16,
+    "Big": true,
+    "Scale": {
+      "Stun": {
+        "Base": 1,
+        "Per": 1
+      }
+    },
+    "Say": "Freeze mobs near you for {Stun}s"
+  }
+]

@@ -1254,63 +1254,7 @@ MENUS.Pets = function()
 	end
 end
 
--- Studio-only test tools (the server also refuses these outside Studio).
-local DEV_BUTTONS = {
-	{"💰 +10,000 coins", "Coins"}, {"🍓 +50 every berry", "Berries"}, {"⚡ Full energy", "Energy"},
-	{"⚔️ All battlers", "Battlers"}, {"🧺 Workers + buildings", "Workers"}, {"🎒 Gear set", "Gear"},
-	{"⬆️ All pets +1 level", "LevelUp"}, {"📖 Fill the book", "Book"}, {"🥚 3 ready eggs", "Eggs"},
-	{"⏩ Finish trips + eggs", "FinishTimers"}, {"⏱ Fast timers on/off", "FastTime"},
-	{"Spawn Common", "Spawn", "Common"}, {"Spawn Rare", "Spawn", "Rare"}, {"Spawn Epic", "Spawn", "Epic"},
-	{"Spawn Legendary", "Spawn", "Legendary"}, {"🌧️ Rain", "Weather", "Rain"}, {"🌠 Star Night", "Weather", "StarNight"},
-	{"☀️ Golden Sun", "Weather", "GoldenSun"}, {"✨ Shiny spawn", "ShinySpawn"}, {"🎡 +5 spins", "Spins"},
-	{"👒 All outfits", "Outfits"}, {"⭐ Farm +1 level", "FarmLevel"}, {"🎁 Present here", "Present"}, {"😢 Make pets sad", "Sad"},
-	{"🌠 Falling star", "Event", "FallingStar"}, {"🏃 Catch race", "Event", "CatchRace"}, {"👹 World boss", "Event", "WorldBoss"},
-	{"🎁 Present rush", "Event", "PresentRush"}, {"❄️ Snow", "Weather", "Snow"}, {"⛈️ Storm", "Weather", "Storm"},
-	{"🧬 Mutate my crops", "MutateCrops"}, {"⏩ Grow my crops", "GrowCrops"},
-	{"🪵 +30 resources", "Resources"}, {"⛏️ Tool +1", "ToolUp"}, {"🍀 Lucky hour", "Lucky"}, {"🛒 Restock now", "Restock"}, {"🌱 All seeds x5", "AllSeeds"}, {"😴 Tire my workers", "TireWorkers"}, {"🍂 Harvest egg", "SeasonalEgg"},
-	{"🥚 Egg snatch", "Event", "EggSnatch"}, {"🎁 +3 capsules", "Capsules"}, {"🧭 Restart journey", "Journey"},
-	{"🎁 Playtime gifts ready", "PlayGifts"}, {"📅 Calendar box ready", "Calendar"}, {"📬 Add mail", "Mail"}, {"🧺 Piles", "Pile"},
-	{"🌈 Farm visitor", "Visitor"}, {"⭐ Golden dash", "Dash"}, {"🌙 Moon pot ready", "MoonPot"}, {"🦝 Raccoon", "Raccoon"},
-	{"✨ Rare fruit", "Fruit"}, {"🔓 Open all gates", "Gates"},
-	{"♻️ Reset my save", "Reset"},
-}
-MENUS.Dev = function()
-	vlist()
-	title.Text = "🛠 Dev Menu (Studio only)"
-	local function gridFrame(order, cell)
-		local f = Instance.new("Frame")
-		f.BackgroundTransparency = 1
-		f.Size = UDim2.new(1, -12, 0, 0)
-		f.AutomaticSize = Enum.AutomaticSize.Y
-		f.LayoutOrder = order
-		f.ZIndex = 11
-		f.Parent = scroll
-		local g = Instance.new("UIGridLayout", f)
-		g.CellSize = cell
-		g.CellPadding = UDim2.fromOffset(8, 8)
-		g.SortOrder = Enum.SortOrder.LayoutOrder
-		return f
-	end
-	local tools = gridFrame(1, UDim2.fromOffset(176, 50))
-	for i, d in DEV_BUTTONS do
-		local color = d[2] == "Reset" and Color3.fromRGB(255, 170, 160) or (d[2] == "Spawn" and Data.Rarities[d[3]].Color or Color3.fromRGB(255, 235, 170))
-		button(tools, {Text = d[1], LayoutOrder = i, ZIndex = 12, BackgroundColor3 = color}, function() act("Dev", d[2], d[3]) end)
-	end
-	-- pet picker: every species, 🌿 = spawn it wild next to you, 🏠 = make it your pet
-	label_(scroll, {Text = "🐾  🌿 / 🏠", Size = UDim2.new(1, -12, 0, 36), LayoutOrder = 2, TextXAlignment = Enum.TextXAlignment.Left})
-	local pets = gridFrame(3, UDim2.fromOffset(118, 150))
-	for i, T in Data.Species do
-		local rarity = Data.Rarities[T.Rarity]
-		local card = button(pets, {Text = "", LayoutOrder = rarity.Order * 100 + i, ZIndex = 12, BackgroundColor3 = rarity.Color:Lerp(Color3.new(1, 1, 1), 0.55)})
-		card.AutoButtonColor = false
-		local vf = CritterUI.Portrait(card, Data, T.Species, {Size = UDim2.new(1, 0, 1, -44), ZIndex = 13})
-		CritterUI.Animate(vf, "idle")
-		for k, d in {{"🌿", "SpawnSpecies", Color3.fromRGB(170, 230, 140)}, {"🏠", "GivePet", Color3.fromRGB(255, 205, 120)}} do
-			button(card, {Text = d[1], AnchorPoint = Vector2.new(k == 1 and 0 or 1, 1), Position = UDim2.new(k == 1 and 0 or 1, k == 1 and 4 or -4, 1, -4),
-				Size = UDim2.new(0.5, -6, 0, 36), ZIndex = 14, BackgroundColor3 = d[3]}, function() act("Dev", d[2], T.Species) end)
-		end
-	end
-end
+-- (the 🛠 Dev menu moved to StarterPlayerScripts.DevMenu)
 
 -- Quests: a streak strip, then one expanding drawer per quest (icon + progress; open to see rewards and claim)
 local QUEST_ICON = {Harvest = "🧺", Plant = "🌱", Water = "💧", Sell = "💰", Befriend = "🐾", Feed = "🍓", Golden = "🌟", Pet = "🤚", Present = "🎁",
@@ -1447,7 +1391,7 @@ bridge.Event:Connect(function(cmd, arg)
 	if cmd == "PetProfile" then
 		openMenu, gearFor, profileFor, bridgeProfile = "Pets", nil, arg, true
 		render()
-	elseif cmd == "Book" or cmd == "Dev" then
+	elseif cmd == "Book" then
 		if openMenu ~= cmd then open(cmd) end
 	elseif cmd == "Hatch" then
 		doHatch(arg)
@@ -1459,7 +1403,6 @@ bridge.Event:Connect(function(cmd, arg)
 	end
 end)
 local menuList = {{"Book", "📖 Book"}, {"Pets", "🐾 Pets"}, {"Quests", "📜 Quests"}}
-if game:GetService("RunService"):IsStudio() then table.insert(menuList, {"Dev", "🛠 Dev"}) end
 for _, m in menuList do
 	local b = button(menuBar, {Size = UDim2.new(1, 0, 0, 48), Text = m[2]}, function() open(m[1]) end)
 	local dot = Instance.new("Frame")

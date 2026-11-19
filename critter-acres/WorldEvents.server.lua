@@ -321,7 +321,7 @@ local function bossTemplate()
 end
 
 function EVENTS.WorldBoss(e)
-	-- the wild lands are generated maps behind the Terrain Portal now, so the boss lands on the green next to it
+	-- the wild lands are generated maps behind the Explorer's Portal now, so the boss lands on the green next to it
 	local green = API.root:FindFirstChild("NorthGreen")
 	local center = green and flat(green.Position) or Vector3.new(4, 0, -62)
 	setPos(center + Vector3.new(0, GROUND_Y, 0))
@@ -368,7 +368,7 @@ function EVENTS.WorldBoss(e)
 	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
 	fill.Parent = bg
 	bb.Parent = boss.PrimaryPart or boss:FindFirstChildWhichIsA("BasePart")
-	API.notifyAll("👹 A WORLD BOSS appeared by the 🌀 Terrain Portal! Tap it to fight, your battle pets will help!")
+	API.notifyAll("👹 A WORLD BOSS appeared by the 🌀 Explorer's Portal! Tap it to fight, your battle pets will help!")
 
 	local damage = {}
 	local dead = false

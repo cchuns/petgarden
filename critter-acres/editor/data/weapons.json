@@ -1,0 +1,410 @@
+[
+  {
+    "Name": "TwigWand",
+    "Display": "Twig Wand",
+    "Icon": "🪄",
+    "Rarity": "Common",
+    "Style": "Magic",
+    "Dmg": 10,
+    "Cd": 0.6,
+    "Range": 34,
+    "Fx": "#ffeb78"
+  },
+  {
+    "Name": "RustySword",
+    "Display": "Rusty Sword",
+    "Icon": "⚔️",
+    "Rarity": "Common",
+    "Style": "Melee",
+    "Dmg": 10,
+    "Cd": 0.7,
+    "Range": 9,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Sword"
+    ]
+  },
+  {
+    "Name": "RustyDagger",
+    "Display": "Rusty Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Common",
+    "Style": "Melee",
+    "Dmg": 6,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "BronzeSword",
+    "Display": "Bronze Sword",
+    "Icon": "⚔️",
+    "Rarity": "Common",
+    "Style": "Melee",
+    "Dmg": 15,
+    "Cd": 0.7,
+    "Range": 9,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Sword"
+    ]
+  },
+  {
+    "Name": "BronzeDagger",
+    "Display": "Bronze Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Common",
+    "Style": "Melee",
+    "Dmg": 14,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "IronDagger",
+    "Display": "Iron Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Uncommon",
+    "Style": "Melee",
+    "Dmg": 22,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "MakeshiftDagger",
+    "Display": "Makeshift Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Common",
+    "Style": "Melee",
+    "Dmg": 10,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "SteelDagger",
+    "Display": "Steel Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Rare",
+    "Style": "Melee",
+    "Dmg": 36,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "GoldDagger",
+    "Display": "Gold Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Epic",
+    "Style": "Melee",
+    "Dmg": 47,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "AssassinsDagger",
+    "Display": "Assassin's Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Epic",
+    "Style": "Melee",
+    "Dmg": 53,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "FalconDagger",
+    "Display": "Falcon Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Epic",
+    "Style": "Melee",
+    "Dmg": 68,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "BlazingDaggerOfDoom",
+    "Display": "Blazing Dagger of Doom",
+    "Icon": "⚔️",
+    "Rarity": "Legendary",
+    "Style": "Melee",
+    "Dmg": 103,
+    "Cd": 0.3,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "Oathkeeper",
+    "Display": "Oathkeeper",
+    "Icon": "⚔️",
+    "Rarity": "Mythic",
+    "Style": "Melee",
+    "Dmg": 253,
+    "Cd": 0.3,
+    "Range": 8,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "Dagger",
+    "Display": "Dagger",
+    "Icon": "⚔️",
+    "Rarity": "Uncommon",
+    "Style": "Melee",
+    "Dmg": 18,
+    "Cd": 0.5,
+    "Range": 7,
+    "Fx": "#ffcc66",
+    "Tags": [
+      "Dagger",
+      "Melee"
+    ]
+  },
+  {
+    "Name": "ScytheOfMythos",
+    "Display": "Scythe of Mythos",
+    "Icon": "⚔️",
+    "Rarity": "Mythic",
+    "Style": "Melee",
+    "Dmg": 350,
+    "Cd": 0.5,
+    "Range": 11,
+    "Fx": "#ffcc66"
+  },
+  {
+    "Name": "CarrotSword",
+    "Display": "Carrot Sword",
+    "Icon": "🥕",
+    "Rarity": "Common",
+    "Style": "Melee",
+    "Dmg": 15,
+    "Cd": 0.5,
+    "Range": 9,
+    "Fx": "#ffa046",
+    "Tags": [
+      "Sword"
+    ]
+  },
+  {
+    "Name": "BubbleWand",
+    "Display": "Bubble Wand",
+    "Icon": "🫧",
+    "Rarity": "Common",
+    "Style": "Magic",
+    "Dmg": 12,
+    "Cd": 0.55,
+    "Range": 34,
+    "Fx": "#a0dcff"
+  },
+  {
+    "Name": "CandyHammer",
+    "Display": "Candy Hammer",
+    "Icon": "🍬",
+    "Rarity": "Rare",
+    "Style": "Melee",
+    "Dmg": 32,
+    "Cd": 0.7,
+    "Range": 10,
+    "Fx": "#ff82be"
+  },
+  {
+    "Name": "StarWand",
+    "Display": "Star Wand",
+    "Icon": "⭐",
+    "Rarity": "Rare",
+    "Style": "Magic",
+    "Dmg": 24,
+    "Cd": 0.55,
+    "Range": 38,
+    "Fx": "#ffe150"
+  },
+  {
+    "Name": "FishySword",
+    "Display": "Fishy Sword",
+    "Icon": "🐟",
+    "Rarity": "Rare",
+    "Style": "Melee",
+    "Dmg": 27,
+    "Cd": 0.5,
+    "Range": 9,
+    "Fx": "#6ec8ff",
+    "Tags": [
+      "Sword"
+    ]
+  },
+  {
+    "Name": "CrystalStaff",
+    "Display": "Crystal Staff",
+    "Icon": "💎",
+    "Rarity": "Epic",
+    "Style": "Magic",
+    "Dmg": 55,
+    "Cd": 0.55,
+    "Range": 40,
+    "Fx": "#be82ff"
+  },
+  {
+    "Name": "CupcakeMallet",
+    "Display": "Cupcake Mallet",
+    "Icon": "🧁",
+    "Rarity": "Epic",
+    "Style": "Melee",
+    "Dmg": 72,
+    "Cd": 0.75,
+    "Range": 10,
+    "Fx": "#ffaad2"
+  },
+  {
+    "Name": "RainbowUmbrella",
+    "Display": "Rainbow Umbrella",
+    "Icon": "☂️",
+    "Rarity": "Epic",
+    "Style": "Melee",
+    "Dmg": 62,
+    "Cd": 0.5,
+    "Range": 10,
+    "Fx": "#ffc878"
+  },
+  {
+    "Name": "SunStaff",
+    "Display": "Sun Staff",
+    "Icon": "☀️",
+    "Rarity": "Legendary",
+    "Style": "Magic",
+    "Dmg": 120,
+    "Cd": 0.5,
+    "Range": 44,
+    "Fx": "#ffc83c"
+  },
+  {
+    "Name": "LollipopBlade",
+    "Display": "Lollipop Blade",
+    "Icon": "🍭",
+    "Rarity": "Legendary",
+    "Style": "Melee",
+    "Dmg": 145,
+    "Cd": 0.5,
+    "Range": 11,
+    "Fx": "#ff78aa"
+  },
+  {
+    "Name": "MoonWand",
+    "Display": "Moon Wand",
+    "Icon": "🌙",
+    "Rarity": "Mythic",
+    "Style": "Magic",
+    "Dmg": 260,
+    "Cd": 0.45,
+    "Range": 46,
+    "Fx": "#c8beff"
+  },
+  {
+    "Name": "UnicornBlade",
+    "Display": "Unicorn Blade",
+    "Icon": "🦄",
+    "Rarity": "Mythic",
+    "Style": "Melee",
+    "Dmg": 300,
+    "Cd": 0.45,
+    "Range": 11,
+    "Fx": "#ffa0e6"
+  },
+  {
+    "Name": "PebbleSling",
+    "Display": "Pebble Slingshot",
+    "Icon": "🎯",
+    "Rarity": "Common",
+    "Style": "Range",
+    "Dmg": 11,
+    "Cd": 0.55,
+    "Range": 42,
+    "Fx": "#c8aa82"
+  },
+  {
+    "Name": "PeaShooter",
+    "Display": "Pea Shooter",
+    "Icon": "🌱",
+    "Rarity": "Rare",
+    "Style": "Range",
+    "Dmg": 25,
+    "Cd": 0.5,
+    "Range": 44,
+    "Fx": "#82dc5a"
+  },
+  {
+    "Name": "ToyBow",
+    "Display": "Toy Bow",
+    "Icon": "🏹",
+    "Rarity": "Epic",
+    "Style": "Range",
+    "Dmg": 58,
+    "Cd": 0.55,
+    "Range": 46,
+    "Fx": "#ff96be"
+  },
+  {
+    "Name": "SunBow",
+    "Display": "Sun Bow",
+    "Icon": "🌅",
+    "Rarity": "Legendary",
+    "Style": "Range",
+    "Dmg": 128,
+    "Cd": 0.5,
+    "Range": 48,
+    "Fx": "#ffc846"
+  },
+  {
+    "Name": "RainbowBow",
+    "Display": "Rainbow Bow",
+    "Icon": "🌈",
+    "Rarity": "Mythic",
+    "Style": "Range",
+    "Dmg": 275,
+    "Cd": 0.45,
+    "Range": 50,
+    "Fx": "#96d2ff"
+  }
+]

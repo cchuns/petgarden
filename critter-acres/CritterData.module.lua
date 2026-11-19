@@ -42,11 +42,18 @@ Data.BaseBerries = 4 -- the first 4 crops are the "berries" used for catching cr
 -- Fancier berries make wild critters more likely to say yes (by crop tier, base berries only).
 Data.BerryCatchBonus = {1, 1.3, 1.6, 2}
 
+-- Tiers, low to high, one color each (pets, weapons, packs):
+--   ⚪ Common · 🟢 Uncommon · 🔵 Rare · 🟣 Epic · 🟡 Legendary · 🔴 Mythic
+-- Order feeds the balance math (energy, naps, power), so Uncommon sits between Common and Rare at 1.5.
+-- No pets are Uncommon or Mythic yet (Mythic is used by weapons).
+Data.RarityOrder = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"}
 Data.Rarities = {
 	Common = {Order = 1, Weight = 60, Catch = 0.7, Color = Color3.fromRGB(240, 240, 240)},
+	Uncommon = {Order = 1.5, Weight = 40, Catch = 0.55, Color = Color3.fromRGB(110, 205, 95)},
 	Rare = {Order = 2, Weight = 28, Catch = 0.4, Color = Color3.fromRGB(90, 170, 255)},
 	Epic = {Order = 3, Weight = 10, Catch = 0.2, Color = Color3.fromRGB(205, 120, 255)},
 	Legendary = {Order = 4, Weight = 2, Catch = 0.08, Color = Color3.fromRGB(255, 200, 60)},
+	Mythic = {Order = 5, Weight = 0.5, Catch = 0.03, Color = Color3.fromRGB(255, 80, 80)},
 }
 
 -- Jobs: Water, Harvest, Plant, Grow (adds Boost of a crop's growth per visit).
@@ -502,7 +509,7 @@ Data.DailySpins = 1 -- free spins each new day
 
 ---------------------------------------------------------------- open world: biomes
 -- Each biome has its own wild critters (some only live in one place). Part = ground part in the world:
--- Since 2026-11-17 the lands are generated fresh for every trip through the 🌀 Terrain Portal (ServerScriptService.Realms).
+-- Since 2026-11-17 the lands are generated fresh for every trip through the 🌀 Explorer's Portal (ServerScriptService.Realms).
 Data.Biomes = {
 	{Name = "Meadow", Icon = "🌼", WildMax = 4, Color = Color3.fromRGB(150, 220, 110),
 		Species = {"Hopsy", "Sprig", "Splashy", "Nibblet", "Bloomby", "Purrkin"}},
@@ -967,14 +974,14 @@ Data.JourneyEgg = 30 -- the journey's free egg hatches in 30 seconds
 Data.ButtonUnlocks = {Decorate = 2, Bag = 2, Nest = 3, Raid = 5, Trade = 4, Gift = 2}
 
 ---------------------------------------------------------------- world: gates, NPC quests, fishing, show, raccoons
--- 🚧 land gates: pay once to open a land forever (Meadow is always open). Opened on the 🌀 Terrain Portal screen.
+-- 🚧 land gates: pay once to open a land forever (Meadow is always open). Opened on the 🌀 Explorer's Portal screen.
 Data.Gates = { -- lands open by farm level only (no coins)
 	Forest = {Level = 2},
 	Peaks = {Level = 4},
 	Caves = {Level = 6},
 	Volcano = {Level = 8},
 }
-Data.GateBounds = {} -- the lands are generated maps behind the 🌀 Terrain Portal now (Realms); old bounds kept below
+Data.GateBounds = {} -- the lands are generated maps behind the 🌀 Explorer's Portal now (Realms); old bounds kept below
 Data.OldGateBounds = { -- x1, z1, x2, z2 (matched BuildWorld biome sizes)
 	Forest = {-470, -180, -190, 140}, Peaks = {190, -180, 470, 140},
 	Caves = {-400, -520, -100, -260}, Volcano = {100, -520, 400, -260},
@@ -1058,36 +1065,99 @@ end
 
 ---------------------------------------------------------------- ⚔️ adventure combat (wild lands only)
 -- Mobs in the lands are for battling, never for taming. New pets only come from eggs (mobs sometimes drop one!).
--- You have ❤️ hearts: a mob bonk takes one (bosses take two). Hearts come back when you rest a moment.
--- At 0 hearts you faint (a cute poof) and wake up at the map's portal with full hearts. You never lose anything.
-Data.Hearts = 5
-Data.HeartRegenDelay = 4 -- seconds without a bonk before hearts start coming back
-Data.HeartRegenSecs = 2.5 -- one heart back every this many seconds
-Data.SafeSecs = 3 -- can't be bonked right after waking up
+-- At 0 HP you faint (a cute poof) and wake up at the map's portal with full HP. You never lose anything.
+-- ⚡ PWR (power) and levels
+--   Your PWR = (weapon power + half your buddy pet's ATK) x Hero bonus (+4% for every ⚔️ Hero Level after 1).
+--   Every level is worth x1.15 PWR: Lv 1 = PWR 10, Lv 6 ~ 20, Lv 11 ~ 40, Lv 16 ~ 81, Lv 21 ~ 164, Lv 25 ~ 287.
+--   👥 Party PWR = everyone in the map added up. Mobs take their LEVEL from the party PWR (more friends = higher
+--   level mobs: more HP, better rewards) but hit as hard as the AVERAGE explorer, so bringing a friend never makes
+--   the hits scarier. Each land keeps its mobs inside its level range, and mobs deeper in the map (toward the
+--   boss den) are up to +2 levels. Your ❤️ HP is 10 x your PWR, so a better weapon or Hero Level makes you tougher too.
+Data.Pwr = {Base = 10, Step = 1.15, BuddyShare = 0.5, HeroBonus = 0.04}
+function Data.PwrOfLevel(lv) return Data.Pwr.Base * Data.Pwr.Step ^ (lv - 1) end
+function Data.LevelOfPwr(pwr) -- (a decimal; floor it to show)
+	return math.max(1, 1 + math.log(math.max(pwr, 1) / Data.Pwr.Base) / math.log(Data.Pwr.Step))
+end
+Data.LandLevels = {Meadow = {1, 5}, Forest = {5, 10}, Peaks = {10, 15}, Caves = {15, 20}, Volcano = {20, 25}}
+Data.HpPerPwr = 10
+Data.HpRegenDelay = 4 -- seconds without a hit before HP starts coming back
+Data.HpRegenPct = 0.06 -- of your max HP every second
+Data.SafeSecs = 3 -- can't be hit right after waking up
+-- ⚔️ Hero Level: earned by beating mobs (Hero XP). Each level adds Data.Pwr.HeroBonus to your PWR.
+Data.HeroMax = 50 -- (= 50 skill points, see Data.Skills)
+function Data.HeroNeed(lv) return math.floor(20 * lv ^ 1.6) end -- Hero XP to go from lv to lv + 1
 
--- mob strength per land (Special = the rare glowing one, Boss = the big one at the den)
-Data.MobStats = {
-	Meadow = {HP = 40, Coins = 3, Xp = 1},
-	Forest = {HP = 95, Coins = 6, Xp = 2},
-	Peaks = {HP = 190, Coins = 10, Xp = 3},
-	Caves = {HP = 360, Coins = 16, Xp = 4},
-	Volcano = {HP = 650, Coins = 25, Xp = 6},
-}
-Data.MobSpecial = {HP = 2.5, Coins = 5, Xp = 4, Capsule = 0.2, Egg = 0.1}
-Data.MobBoss = {HP = 14, Coins = 25, Xp = 20, Capsule = 1, Egg = 0.35}
+-- mob numbers at level L (x the Special / Boss multipliers below):
+--   HP = 30 x 1.18^(L-1)   ATT = 8 x 1.15^(L-1)  (a same-level mob takes ~12 hits to make you faint)
+--   coins = 3 x 1.14^(L-1), farm XP = 1 x 1.1^(L-1), Hero XP = 3 x 1.17^(L-1)
+Data.MobScale = {HP = 30, HPStep = 1.18, ATT = 8, ATTStep = 1.15, Coins = 3, CoinStep = 1.14, Xp = 1, XpStep = 1.1,
+	Hero = 3, HeroStep = 1.17, DepthMax = 2}
+Data.MobSpecial = {HP = 2.5, ATT = 1.3, Coins = 5, Xp = 4, Hero = 4, Capsule = 0.2, Egg = 0.1}
+Data.MobBoss = {HP = 10, ATT = 1.5, Coins = 25, Xp = 20, Hero = 20, Capsule = 1, Egg = 0.35, Lv = 2} -- Lv = levels above the mobs
 Data.MobNormal = {Capsule = 0.025, Egg = 0.012, Res = 0.3}
+Data.MobGray = {Below = 6, Reward = 0.25} -- a mob 6+ levels under YOUR level gives only 25% rewards
+-- 🏹 ranged mobs: about 1 in 3 in a group stay back and shoot a slow ball down a red lane instead of bonking
+Data.MobRanged = {Chance = 0.35, Reach = 20, ATT = 0.8, Speed = 26, R = 1.4, Range = 32, Aim = 0.8, Cd = {2.6, 3.4},
+	Look = {Meadow = "Pollen", Forest = "Thorn", Peaks = "Snow", Caves = "Gem", Volcano = "Lava"}}
+-- name tag color: how a mob's level compares to yours
+function Data.MobDanger(mobLv, myLv)
+	local d = mobLv - myLv
+	if d <= -Data.MobGray.Below then return "Gray", Color3.fromRGB(190, 190, 190) end
+	if d <= 1 then return "Green", Color3.fromRGB(130, 230, 110) end
+	if d <= 4 then return "Orange", Color3.fromRGB(255, 170, 60) end
+	return "Red", Color3.fromRGB(255, 80, 80)
+end
 Data.MobNotice = 16 -- studs: a mob notices you this close (bosses a bit further)
 Data.MobLeash = 50 -- a mob gives up and goes home this far from its spot (and heals up)
 Data.MobRespawn = {Normal = 40, Boss = 150} -- seconds until a defeated mob comes back
 Data.MobEgg = {Meadow = "Mystery", Forest = "Mystery", Peaks = "Crystal", Caves = "Crystal", Volcano = "Lava"} -- bosses: Star egg sometimes
+-- 👑 Boss special attacks (ServerScriptService.BossSkills runs them, StarterPlayerScripts.BossFx draws them).
+-- Every special shows a warning first (red circles / red lanes on the ground, a big name over the boss),
+-- so kids can always see it coming and walk out of the way.
+--   Rain   = things fall from the sky on red circles (one right where each player stands, more around)
+--   Slam   = the boss jumps and lands: a big red circle around it. Stun = you get dizzy / frozen / sticky for a moment
+--   Volley = the boss throws glowing balls. Red lanes show where they fly (Fan = all at once in a fan)
+--   Line   = a red lane in front of the boss: Charge (it runs through) or Breath (a long blast)
+-- Warn = seconds of warning, R = circle radius (studs), N = how many, Hurt = x the boss's ATT (default 1).
+Data.BossSkill = {First = 3, Gap = {6, 9}, StunSecs = 1.2, HitGap = 0.7, Range = 70}
+Data.BossSkills = {
+	QueenBuzzbloom = {
+		{Type = "Rain", Name = "Pollen Rain", Icon = "🌼", N = 3, R = 6, Warn = 2.0, Look = "Pollen"},
+		{Type = "Volley", Name = "Honey Shots", Icon = "🍯", N = 3, Speed = 24, R = 2, Aim = 0.9, Gap = 0.6, Look = "Honey", Stun = "Honey"},
+		{Type = "Slam", Name = "Buzz Burst", Icon = "💥", R = 10, Warn = 1.8, Look = "Pollen"},
+	},
+	BrambleBear = {
+		{Type = "Rain", Name = "Acorn Drop", Icon = "🌰", N = 4, R = 6, Warn = 1.9, Look = "Acorn"},
+		{Type = "Volley", Name = "Thorn Fan", Icon = "🌿", N = 5, Fan = 60, Speed = 28, R = 1.8, Aim = 1.0, Look = "Thorn"},
+		{Type = "Slam", Name = "Big Stomp", Icon = "💫", R = 12, Warn = 1.6, Look = "Dirt", Stun = "Dizzy"},
+		{Type = "Line", Mode = "Charge", Name = "Bear Charge", Icon = "🐻", L = 30, W = 8, Warn = 1.4, Look = "Dirt"},
+	},
+	IceWyrm = {
+		{Type = "Rain", Name = "Icicle Rain", Icon = "🧊", N = 5, R = 5.5, Warn = 1.8, Look = "Ice"},
+		{Type = "Line", Mode = "Breath", Name = "Frost Breath", Icon = "❄️", L = 26, W = 9, Warn = 1.4, Hold = 1.2, Look = "Ice", Stun = "Ice"},
+		{Type = "Volley", Name = "Snowballs", Icon = "⛄", N = 4, Speed = 30, R = 2, Aim = 0.8, Gap = 0.5, Look = "Snow"},
+	},
+	GemGolem = {
+		{Type = "Rain", Name = "Crystal Rain", Icon = "💎", N = 6, R = 5.5, Warn = 1.8, Look = "Gem"},
+		{Type = "Volley", Name = "Gem Shards", Icon = "🔮", N = 7, Fan = 80, Speed = 28, R = 1.8, Aim = 1.0, Look = "Gem"},
+		{Type = "Slam", Name = "Quake Slam", Icon = "💫", R = 14, Warn = 1.6, Look = "Gem", Stun = "Dizzy"},
+	},
+	LavaTitan = {
+		{Type = "Rain", Name = "Meteor Shower", Icon = "☄️", N = 7, R = 6, Warn = 1.7, Look = "Lava"},
+		{Type = "Volley", Name = "Fireballs", Icon = "🔥", N = 5, Speed = 32, R = 2, Aim = 0.8, Gap = 0.45, Look = "Lava"},
+		{Type = "Line", Mode = "Breath", Name = "Fire Breath", Icon = "🔥", L = 28, W = 9, Warn = 1.4, Hold = 1.2, Look = "Lava"},
+		{Type = "Slam", Name = "Eruption Slam", Icon = "💫", R = 15, Warn = 1.6, Look = "Lava", Stun = "Dizzy"},
+	},
+}
 
--- weapons: Style Magic = sparkly bolts from afar, Melee = bonk up close (stronger). Cd = seconds between attacks.
+-- weapons: Style Magic = sparkly bolts from afar, Melee = bonk up close (stronger), Range = pebbles/arrows from furthest. Cd = seconds between attacks.
 Data.WeaponRarities = {
-	{Name = "Common", Color = Color3.fromRGB(235, 235, 235)},
+	{Name = "Common", Color = Color3.fromRGB(240, 240, 240)},
+	{Name = "Uncommon", Color = Color3.fromRGB(110, 205, 95)},
 	{Name = "Rare", Color = Color3.fromRGB(90, 170, 255)},
 	{Name = "Epic", Color = Color3.fromRGB(205, 120, 255)},
 	{Name = "Legendary", Color = Color3.fromRGB(255, 200, 60)},
-	{Name = "Mythic", Color = Color3.fromRGB(255, 120, 200)},
+	{Name = "Mythic", Color = Color3.fromRGB(255, 80, 80)},
 }
 Data.WeaponRarityByName = {}
 for i, r in Data.WeaponRarities do r.Order = i Data.WeaponRarityByName[r.Name] = r end
@@ -1105,6 +1175,12 @@ Data.Weapons = {
 	{Name = "LollipopBlade", Display = "Lollipop Blade", Icon = "🍭", Rarity = "Legendary", Style = "Melee", Dmg = 145, Cd = 0.5, Range = 11, Fx = Color3.fromRGB(255, 120, 170)},
 	{Name = "MoonWand", Display = "Moon Wand", Icon = "🌙", Rarity = "Mythic", Style = "Magic", Dmg = 260, Cd = 0.45, Range = 46, Fx = Color3.fromRGB(200, 190, 255)},
 	{Name = "UnicornBlade", Display = "Unicorn Blade", Icon = "🦄", Rarity = "Mythic", Style = "Melee", Dmg = 300, Cd = 0.45, Range = 11, Fx = Color3.fromRGB(255, 160, 230)},
+	-- 🏹 Range: pebbles, peas and arrows that fly further than magic (weaker than melee up close)
+	{Name = "PebbleSling", Display = "Pebble Slingshot", Icon = "🎯", Rarity = "Common", Style = "Range", Dmg = 11, Cd = 0.55, Range = 42, Fx = Color3.fromRGB(200, 170, 130)},
+	{Name = "PeaShooter", Display = "Pea Shooter", Icon = "🌱", Rarity = "Rare", Style = "Range", Dmg = 25, Cd = 0.5, Range = 44, Fx = Color3.fromRGB(130, 220, 90)},
+	{Name = "ToyBow", Display = "Toy Bow", Icon = "🏹", Rarity = "Epic", Style = "Range", Dmg = 58, Cd = 0.55, Range = 46, Fx = Color3.fromRGB(255, 150, 190)},
+	{Name = "SunBow", Display = "Sun Bow", Icon = "🌅", Rarity = "Legendary", Style = "Range", Dmg = 128, Cd = 0.5, Range = 48, Fx = Color3.fromRGB(255, 200, 70)},
+	{Name = "RainbowBow", Display = "Rainbow Bow", Icon = "🌈", Rarity = "Mythic", Style = "Range", Dmg = 275, Cd = 0.45, Range = 50, Fx = Color3.fromRGB(150, 210, 255)},
 }
 Data.WeaponByName = {}
 for _, w in Data.Weapons do Data.WeaponByName[w.Name] = w end
@@ -1123,6 +1199,84 @@ Data.BuddyAggroRadius = 22
 Data.StarLife = 120 -- seconds before an untouched star fades away
 Data.StarPickup = 5 -- walk this close to grab it
 Data.PetCollect = {Radius = 35, Secs = {4, 3, 2.2, 1.5, 1}}
+-- 🌳 Skill tree (ServerScriptService.Skills keeps it, StarterPlayerScripts.SkillTree shows it, key K).
+-- You get 1 skill point for every ⚔️ Hero Level (max Data.HeroMax = 50, so 50 points in all).
+-- A skill needs your Hero Level >= Lv and the skill above it (Req) learned. Each point either learns a new skill or
+-- levels one up (to Max). One branch maxed = 28 points, so builds differ. Free reset anytime.
+-- Damage skills power up the weapon style of their branch (Melee / Range / Magic). The Q and R moves use the active
+-- skill of the branch that matches the weapon in your hand. Row / Col = where the card sits in the tree (Col 1.5 = middle).
+Data.SkillBranches = {
+	{Name = "Melee", Icon = "🗡️", Style = "Melee", Color = Color3.fromRGB(240, 140, 110),
+		Order = {"BigBonk", "ToughHide", "SpinSwing", "ShieldUp", "GroundPound", "GiantMode"}},
+	{Name = "Range", Icon = "🏹", Style = "Range", Color = Color3.fromRGB(90, 200, 160),
+		Order = {"SharpShot", "QuickFeet", "DoubleShot", "EagleEye", "ArrowRain", "RapidFire"}},
+	{Name = "Mage", Icon = "🔮", Style = "Magic", Color = Color3.fromRGB(165, 145, 240),
+		Order = {"SparkPower", "LongReach", "BouncyBolt", "HealingSparkle", "MiniMeteor", "FreezeRing"}},
+}
+local function pct(x) return math.floor(x * 100 + 0.5) end
+Data.Skills = {
+	-- 🗡️ Melee
+	BigBonk = {Branch = "Melee", Name = "Big Bonk", Icon = "🔨", Lv = 1, Max = 5, Row = 1, Col = 1.5, Kind = "Dmg", Per = 0.08,
+		Say = function(r) return ("+%d%% melee damage"):format(pct(0.08 * r)) end},
+	ToughHide = {Branch = "Melee", Name = "Tough Hide", Icon = "🛡️", Lv = 5, Max = 5, Req = "BigBonk", Row = 2, Col = 1, Kind = "HP", Per = 0.06,
+		Say = function(r) return ("+%d%% max HP"):format(pct(0.06 * r)) end},
+	SpinSwing = {Branch = "Melee", Name = "Spin Swing", Icon = "🌀", Lv = 10, Max = 5, Req = "BigBonk", Row = 2, Col = 2, Kind = "Spin", Per = 0.2,
+		Say = function(r) return ("Every 3rd swing hits all around you, %d%% damage"):format(100 + pct(0.2 * r)) end},
+	ShieldUp = {Branch = "Melee", Name = "Shield Up", Icon = "🧱", Lv = 18, Max = 5, Req = "ToughHide", Row = 3, Col = 1, Kind = "Guard", Per = 0.04,
+		Say = function(r) return ("-%d%% damage taken"):format(pct(0.04 * r)) end},
+	GroundPound = {Branch = "Melee", Name = "Ground Pound", Icon = "💥", Lv = 25, Max = 5, Req = "SpinSwing", Row = 3, Col = 2, Kind = "Active", Cd = 12, R = 12,
+		Dmg = function(r) return 1.5 + 0.3 * r end, Stun = function(r) return 0.8 + 0.2 * r end,
+		Say = function(r) return ("Stomp! Circle around you, %d%% damage, %.1fs dizzy"):format(pct(1.5 + 0.3 * r), 0.8 + 0.2 * r) end},
+	GiantMode = {Branch = "Melee", Name = "Giant Mode", Icon = "🦖", Lv = 40, Max = 3, Req = "GroundPound", Row = 4, Col = 1.5, Kind = "Active", Big = true, Cd = 40,
+		Secs = function(r) return 4 + 2 * r end, Boost = function(r) return 0.2 * r end,
+		Say = function(r) return ("Grow big for %ds, +%d%% damage"):format(4 + 2 * r, pct(0.2 * r)) end},
+	-- 🏹 Range
+	SharpShot = {Branch = "Range", Name = "Sharp Shot", Icon = "🎯", Lv = 1, Max = 5, Row = 1, Col = 1.5, Kind = "Dmg", Per = 0.08,
+		Say = function(r) return ("+%d%% range damage"):format(pct(0.08 * r)) end},
+	QuickFeet = {Branch = "Range", Name = "Quick Feet", Icon = "👟", Lv = 5, Max = 5, Req = "SharpShot", Row = 2, Col = 1, Kind = "Speed", Per = 0.04,
+		Say = function(r) return ("+%d%% walk speed in the lands"):format(pct(0.04 * r)) end},
+	DoubleShot = {Branch = "Range", Name = "Double Shot", Icon = "➰", Lv = 10, Max = 5, Req = "SharpShot", Row = 2, Col = 2, Kind = "Double", Per = 0.1,
+		Say = function(r) return ("%d%% chance to hit a 2nd mob too"):format(pct(0.1 * r)) end},
+	EagleEye = {Branch = "Range", Name = "Eagle Eye", Icon = "🦅", Lv = 18, Max = 5, Req = "QuickFeet", Row = 3, Col = 1, Kind = "Crit", Per = 0.03,
+		Say = function(r) return ("+%d%% crit chance"):format(pct(0.03 * r)) end},
+	ArrowRain = {Branch = "Range", Name = "Arrow Rain", Icon = "🌧️", Lv = 25, Max = 5, Req = "DoubleShot", Row = 3, Col = 2, Kind = "Active", Cd = 12, R = 10,
+		Dmg = function(r) return 1.2 + 0.3 * r end,
+		Say = function(r) return ("Arrows rain on a circle, %d%% damage"):format(pct(1.2 + 0.3 * r)) end},
+	RapidFire = {Branch = "Range", Name = "Rapid Fire", Icon = "⚡", Lv = 40, Max = 3, Req = "ArrowRain", Row = 4, Col = 1.5, Kind = "Active", Big = true, Cd = 40,
+		Secs = function() return 6 end, Speed = function(r) return 2 + r end,
+		Say = function(r) return ("Attack %dx faster for 6s"):format(2 + r) end},
+	-- 🔮 Mage
+	SparkPower = {Branch = "Mage", Name = "Spark Power", Icon = "✨", Lv = 1, Max = 5, Row = 1, Col = 1.5, Kind = "Dmg", Per = 0.08,
+		Say = function(r) return ("+%d%% magic damage"):format(pct(0.08 * r)) end},
+	LongReach = {Branch = "Mage", Name = "Long Reach", Icon = "📏", Lv = 5, Max = 5, Req = "SparkPower", Row = 2, Col = 1, Kind = "Reach", Per = 0.06,
+		Say = function(r) return ("+%d%% magic range"):format(pct(0.06 * r)) end},
+	BouncyBolt = {Branch = "Mage", Name = "Bouncy Bolt", Icon = "🔀", Lv = 10, Max = 5, Req = "SparkPower", Row = 2, Col = 2, Kind = "Bounce",
+		Hops = function(r) return math.ceil(r / 2) end, Part = function(r) return 0.4 + 0.1 * r end,
+		Say = function(r) return ("Bolts bounce to %d more mob%s, %d%% damage"):format(math.ceil(r / 2), r > 2 and "s" or "", pct(0.4 + 0.1 * r)) end},
+	HealingSparkle = {Branch = "Mage", Name = "Healing Sparkle", Icon = "💖", Lv = 18, Max = 5, Req = "LongReach", Row = 3, Col = 1, Kind = "Heal", Per = 0.01,
+		Say = function(r) return ("Magic hits heal you %d%% of max HP"):format(r) end},
+	MiniMeteor = {Branch = "Mage", Name = "Mini Meteor", Icon = "☄️", Lv = 25, Max = 5, Req = "BouncyBolt", Row = 3, Col = 2, Kind = "Active", Cd = 14, R = 10,
+		Dmg = function(r) return 2 + 0.4 * r end,
+		Say = function(r) return ("A meteor lands on a circle, %d%% damage"):format(pct(2 + 0.4 * r)) end},
+	FreezeRing = {Branch = "Mage", Name = "Freeze Ring", Icon = "❄️", Lv = 40, Max = 3, Req = "MiniMeteor", Row = 4, Col = 1.5, Kind = "Active", Big = true, Cd = 40, R = 16,
+		Stun = function(r) return 1 + r end,
+		Say = function(r) return ("Freeze mobs near you for %ds"):format(1 + r) end},
+}
+Data.SkillAim = 40 -- moves that land on a circle (Arrow Rain, Mini Meteor) reach this far
+-- ⚡ Kind = "Active" skills go in their branch's 5-slot skill bar (keys 1-5 in the lands); only a weapon of that branch uses them. Big = a big move.
+Data.SkillSlots = 5
+-- a branch's skill of a kind ("Dmg", "Q", "R" ...)
+function Data.SkillOf(branch, kind)
+	for id, s in Data.Skills do
+		if s.Branch == branch and s.Kind == kind then return id, s end
+	end
+end
+function Data.BranchOfStyle(style)
+	for _, b in Data.SkillBranches do
+		if b.Style == style then return b.Name end
+	end
+	return "Melee"
+end
 
 -- 🎁 weapon capsules: Weights = chance of each rarity. Basic is sold in the ⚔️ Weapons menu for coins,
 -- the land capsules drop from mobs, bosses and treasure chests in that land.
@@ -1141,6 +1295,13 @@ function Data.WeaponPower(w)
 	local def = Data.WeaponByName[w.Name]
 	if not def then return 0 end
 	return math.floor(def.Dmg * (1 + (w.Stars or 0) * Data.WeaponStarBonus) * (w.Shiny and Data.WeaponShinyMult or 1) + 0.5)
+end
+-- 💥 damage range shown on a weapon (power 72 = "66-78"): every hit rolls a number in it.
+-- Each ⭐ star (and ✨ shiny) raises the whole range, because it raises the power. Skills and Giant Mode hit even harder.
+Data.WeaponSpread = 0.08 -- the range goes this far below and above the power
+function Data.WeaponRange(w)
+	local p = Data.WeaponPower(w)
+	return math.max(1, math.floor(p * (1 - Data.WeaponSpread) + 0.5)), math.max(1, math.floor(p * (1 + Data.WeaponSpread) + 0.5))
 end
 
 -- player attribute that holds how many seeds of a crop you own (attribute names can't have spaces)

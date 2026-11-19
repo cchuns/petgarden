@@ -1,7 +1,7 @@
 -- Critter Acres: CritterMenus (StarterPlayerScripts LocalScript)
 -- The clean, minimal player UI:
---   top left: ⭐ level + XP bar, 💰 coins      top right: 🔔 To do (count)
---   bottom: dock 🐾 Pets · 🏡 Farm · 🗺️ World · 🛒 Shop
+--   top left: ⚔️ player level + XP bar, 💰 coins, and under it a small 🏡 farm level chip      top right: 🔔 To do (count)
+--   top right: dock 🐾 Pets · 🏡 Farm · 🗺️ World · 🛒 Shop · ⚔️ Weapons · 🌳 Skills · 🔔 To do (one row; 2 columns on small screens)
 --   bottom right (on your farm only): the seed you're planting      bottom left: your buddy (tap for actions)
 -- Every window has the same look (UIKit): icon, title, a one-line subtitle, tabs, ❓ help, ✖ close.
 -- Grey buttons always say why. Hover (PC) or hold (touch) any button for a tooltip.
@@ -46,25 +46,40 @@ stateEvent.OnClientEvent:Connect(function(st) state = st stateAt = os.clock() he
 task.defer(function() stateEvent:FireServer() end)
 
 ---------------------------------------------------------------- top bar
-local top = K.frame(gui, {Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(420, 52), BackgroundTransparency = 1})
-K.list(top, Enum.FillDirection.Horizontal, 8)
-local lvPill = K.button(top, {Text = "", Size = UDim2.fromOffset(190, 50), LayoutOrder = 1, Tip = "⭐ Farm level",
-	TipText = "Plant, harvest, catch and hatch to level up. Levels unlock seeds and more."}, function()
-	toast(("⭐ Level %d: %s XP to the next level"):format(farmLevel(), commas((player:GetAttribute("FarmXpNext") or 0) - (player:GetAttribute("FarmXp") or 0))))
+local top = K.frame(gui, {Position = UDim2.fromOffset(16, 14), Size = UDim2.fromOffset(440, 52), BackgroundTransparency = 1})
+K.list(top, Enum.FillDirection.Horizontal, 14)
+-- ⚔️ player (Hero) level: big pill with its XP bar
+local function heroLevel() return player:GetAttribute("HeroLv") or 1 end
+local heroPill = K.button(top, {Text = "", Size = UDim2.fromOffset(210, 50), LayoutOrder = 1, Tip = "⚔️ Player level",
+	TipText = "Beat mobs in the wild lands to level up. Every level = +1 skill point (K)."}, function()
+	local lv = heroLevel()
+	if lv >= Data.HeroMax then toast(("⚔️ Level %d: max level!"):format(lv)) return end
+	toast(("⚔️ Level %d: %s XP to the next level  ·  🌳 skills: K"):format(lv, commas(Data.HeroNeed(lv) - (player:GetAttribute("HeroXp") or 0))))
 end)
-local lvText = K.text(lvPill, {Text = "⭐ Lv 1", Size = UDim2.new(0.45, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Max = 22})
-local _, lvFill = K.bar(lvPill, 0, K.YELLOW, {Position = UDim2.new(0.45, 4, 0.5, -7), Size = UDim2.new(0.55, -6, 0, 14)})
+local heroText = K.text(heroPill, {Text = "⚔️ Lv 1", Size = UDim2.new(0.48, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Max = 22})
+local _, heroFill = K.bar(heroPill, 0, Color3.fromRGB(240, 140, 110), {Position = UDim2.new(0.48, 4, 0.5, -7), Size = UDim2.new(0.52, -6, 0, 14)})
+-- 🏡 farm level: a smaller chip under it
+local lvPill = K.button(gui, {Text = "", Position = UDim2.fromOffset(16, 78), Size = UDim2.fromOffset(210, 32), Max = 16, Tip = "🏡 Farm level",
+	TipText = "Plant, harvest, catch and hatch to level up. Levels unlock seeds and more."}, function()
+	toast(("🏡 Farm level %d: %s XP to the next level"):format(farmLevel(), commas((player:GetAttribute("FarmXpNext") or 0) - (player:GetAttribute("FarmXp") or 0))))
+end)
+lvPill.UIPadding.PaddingTop, lvPill.UIPadding.PaddingBottom = UDim.new(0, 2), UDim.new(0, 2)
+local lvText = K.text(lvPill, {Text = "🏡 Farm Lv 1", Size = UDim2.new(0.55, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Max = 16})
+local _, lvFill = K.bar(lvPill, 0, K.YELLOW, {Position = UDim2.new(0.55, 4, 0.5, -4), Size = UDim2.new(0.45, -6, 0, 8)})
 local coinPill = K.button(top, {Text = "💰 0", Size = UDim2.fromOffset(150, 50), LayoutOrder = 2, Max = 24, Tip = "💰 Coins",
 	TipText = "Sell berries at the stall. Spend coins in the Shop."}, nil)
 local function refreshTop()
-	lvText.Text = ("⭐ Lv %d"):format(farmLevel())
+	local hl = heroLevel()
+	heroText.Text = ("⚔️ Lv %d"):format(hl)
+	heroFill.Size = UDim2.fromScale(hl >= Data.HeroMax and 1 or math.clamp((player:GetAttribute("HeroXp") or 0) / Data.HeroNeed(hl), 0, 1), 1)
+	lvText.Text = ("🏡 Farm Lv %d"):format(farmLevel())
 	local cur, nxt = player:GetAttribute("FarmXp") or 0, player:GetAttribute("FarmXpNext")
 	lvFill.Size = UDim2.fromScale(nxt and math.clamp(cur / nxt, 0, 1) or 1, 1)
 	local ls = player:FindFirstChild("leaderstats")
 	local c = ls and ls:FindFirstChild("Coins")
 	coinPill.Text = "💰 " .. commas(c and c.Value or 0)
 end
-for _, a in {"FarmLevel", "FarmXp", "FarmXpNext"} do player:GetAttributeChangedSignal(a):Connect(refreshTop) end
+for _, a in {"FarmLevel", "FarmXp", "FarmXpNext", "HeroLv", "HeroXp"} do player:GetAttributeChangedSignal(a):Connect(refreshTop) end
 task.spawn(function()
 	local ls = player:WaitForChild("leaderstats")
 	ls:WaitForChild("Coins").Changed:Connect(refreshTop)
@@ -73,7 +88,7 @@ end)
 
 -- 🛠 Dev menu: its own button, Studio only (temporary test tools)
 if RunService:IsStudio() then
-	K.button(gui, {Text = "🛠 Dev", Position = UDim2.fromOffset(12, 66), Size = UDim2.fromOffset(110, 44), Kind = "special", Tip = "🛠 Dev menu",
+	K.button(gui, {Text = "🛠 Dev", Position = UDim2.fromOffset(16, 124), Size = UDim2.fromOffset(110, 44), Kind = "special", Tip = "🛠 Dev menu",
 		TipText = "Test tools (only in Studio)"}, function() bridge:Fire("Dev") end)
 end
 
@@ -309,7 +324,7 @@ RENDER.Pets = function()
 	win.setTabs({{"Mine", "🐾 My pets", "All your pets. Tap one to see it."}, {"Eggs", "🥚 Eggs", "Eggs hatch over time", eggsN > 0 and eggsN or nil},
 		{"Nest", "💕 Nest", "Two pets make a Friend Egg"}, {"Gear", "🛡️ Gear", "Make pets stronger"}, {"Book", "📖 Book", "Every critter you found"}},
 		tab, function(t) setTab("Pets", t) end)
-	win.setHelp({{"🐾", "Catch critters in the wild lands (🌀 Terrain Portal) with berries, or hatch eggs."}, {"🏡", "Pets on your farm work for you. The rest wait in storage."},
+	win.setHelp({{"🐾", "Catch critters in the wild lands (🌀 Explorer's Portal) with berries, or hatch eggs."}, {"🏡", "Pets on your farm work for you. The rest wait in storage."},
 		{"⭐", "Feed and pet them to level up. Babies grow into adults!"}})
 	win.clear()
 	local body = win.body
@@ -345,7 +360,7 @@ RENDER.Pets = function()
 				Tip = p.Name or p.Species, TipText = ("%s %s · %s"):format(p.Rarity, p.Species, Data.SpeciesByName[p.Species].JobText)})
 		end
 		K.card(g, {Order = 9999, Icon = "➕", Name = "Get more pets", Sub = "Wild lands or eggs", Button = {Text = "How?", Kind = "special"},
-			Fn = function() toast("🍓 Go through the 🌀 Terrain Portal and offer berries to wild critters, or hatch eggs!") end})
+			Fn = function() toast("🍓 Go through the 🌀 Explorer's Portal and offer berries to wild critters, or hatch eggs!") end})
 	elseif tab == "Eggs" then
 		local luck = player:GetAttribute("Luck") or 0
 		local r = K.row(body, {Order = 0, Icon = "🍀", Title = luck >= Data.LuckMax and "Luck meter FULL!" or ("Luck meter %d/%d"):format(luck, Data.LuckMax),
@@ -492,13 +507,13 @@ end
 local PLACES = {
 	{Name = "My island", Icon = "🏡", Info = "Your plots, pets and mailbox", Home = true},
 	{Name = "Plaza", Icon = "⛲", Info = "Market street, boutique, festival green and craft corner"},
-	{Name = "TerrainPortal", Title = "Terrain Portal", Icon = "🌀", Info = "Explore wild lands, solo or with friends"},
-	{Name = "Pond", Title = "Fishing pond", Icon = "🎣", Info = "Next to the Terrain Portal"},
+	{Name = "TerrainPortal", Title = "Explorer's Portal", Icon = "🌀", Info = "Explore wild lands, solo or with friends"},
+	{Name = "Pond", Title = "Fishing pond", Icon = "🎣", Info = "Next to the Explorer's Portal"},
 }
 local EVENT_INFO = {
 	FallingStar = "A star crashes down. Grab the big shard first!", CatchRace = "Tag the shiny runner 3 times to win it.",
 	WorldBoss = "Tap the giant boss with everyone. Dodge the red circles!", PresentRush = "Presents rain on the plaza.",
-	EggSnatch = "Carry the golden egg to the 🌀 Terrain Portal. Others can tag you!",
+	EggSnatch = "Carry the golden egg to the 🌀 Explorer's Portal. Others can tag you!",
 }
 RENDER.World = function()
 	win.setTitle("🗺️", "World")
@@ -506,7 +521,7 @@ RENDER.World = function()
 	local tab = currentTab.World or "Places"
 	win.setTabs({{"Places", "📍 Places", "Travel around the world"}, {"Farms", "🏡 Farms", "Visit, trade and send gifts"},
 		{"Fish", "🎣 Fish book", "Every fish you caught"}, {"Events", "🎉 Events", "Fun things that happen for everyone"}}, tab, function(t) setTab("World", t) end)
-	win.setHelp({{"🌀", "Walk into a portal, then pick where to go. Wild lands are behind the 🌀 Terrain Portal."}, {"🌰", "30 golden acorns are hidden around the world."},
+	win.setHelp({{"🌀", "Walk into a portal, then pick where to go. Wild lands are behind the 🌀 Explorer's Portal."}, {"🌰", "30 golden acorns are hidden around the world."},
 		{"🎉", "Events happen every few minutes. Join for prizes!"}})
 	win.clear()
 	local body = win.body
@@ -526,7 +541,7 @@ RENDER.World = function()
 				btn, fn = {Text = "🔒 Lv " .. g.Level, Kind = "no"}, function() toast(("🔒 The %s opens at farm level %d."):format(pl.Name, g.Level), false) end
 			else
 				btn, fn = {Text = "🌀 Portal", Kind = "special"}, function()
-					toast(("The %s is open! Go through the 🌀 Terrain Portal."):format(pl.Name))
+					toast(("The %s is open! Go through the 🌀 Explorer's Portal."):format(pl.Name))
 				end
 			end
 			K.row(body, {Order = i, Icon = pl.Icon, Title = pl.Title or pl.Name, Sub = pl.Info, Button = btn, Fn = fn})
@@ -553,7 +568,7 @@ RENDER.World = function()
 		local book = act("FishBook") or {}
 		local caught = 0
 		for _ in book do caught += 1 end
-		K.row(body, {Order = 0, Icon = "🎣", Title = ("Fish found %d of %d"):format(caught, #Data.Fish), Sub = "Fish at the pond by the Terrain Portal", Progress = {caught, #Data.Fish},
+		K.row(body, {Order = 0, Icon = "🎣", Title = ("Fish found %d of %d"):format(caught, #Data.Fish), Sub = "Fish at the pond by the Explorer's Portal", Progress = {caught, #Data.Fish},
 			Button = {Text = "Go fishing", Kind = "special"}, Fn = function() travel("Place", "Pond") end})
 		local g = K.grid(body, UDim2.fromOffset(130, 150), 1)
 		for i, f in Data.Fish do
@@ -840,7 +855,7 @@ RENDER.Portal = function()
 			btn, fn = {Text = "🔒 Lv " .. g.Level, Kind = "no"}, function() toast(("🔒 The %s opens at farm level %d."):format(pl.Name, g.Level), false) end
 		else
 			btn, fn = {Text = "🌀 Portal", Kind = "special"}, function()
-				toast(("The %s is open! Go through the 🌀 Terrain Portal."):format(pl.Name))
+				toast(("The %s is open! Go through the 🌀 Explorer's Portal."):format(pl.Name))
 			end
 		end
 		K.row(body, {Order = 1 + i, Icon = pl.Icon, Title = pl.Name == "Plaza" and "Town" or pl.Title or pl.Name, Sub = pl.Info, Button = btn, Fn = fn})
@@ -901,20 +916,46 @@ stateEvent.OnClientEvent:Connect(function()
 	if current and win.frame.Visible and (current == "Pets" or current == "Todo") then task.defer(render, current) end
 end)
 
----------------------------------------------------------------- dock + 🔔 button
-local dock = K.frame(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(5 * 92, 76), BackgroundTransparency = 1})
-K.list(dock, Enum.FillDirection.Horizontal, 8)
+---------------------------------------------------------------- dock (top right, ends with 🔔 To do)
+-- One row on wide screens. On small screens (player attribute HudCompact) it becomes 2 columns so it never runs into the
+-- level pills on the left; TerrainPortal / Combat / BossFx move their top bars down to match.
+local dock = K.frame(gui, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 8), BackgroundTransparency = 1})
+local dockGrid = Instance.new("UIGridLayout")
+dockGrid.SortOrder = Enum.SortOrder.LayoutOrder
+dockGrid.Parent = dock
+local DOCK_N = 7
+local function layoutDock()
+	local w = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X) or 1280
+	local compact = w < 1060
+	local cw, ch, pad = compact and 62 or 76, compact and 58 or 68, compact and 4 or 6
+	local cols = compact and 2 or DOCK_N
+	local rows = math.ceil(DOCK_N / cols)
+	dockGrid.CellSize = UDim2.fromOffset(cw, ch)
+	dockGrid.CellPadding = UDim2.fromOffset(pad, pad)
+	dock.Size = UDim2.fromOffset(cols * cw + (cols - 1) * pad, rows * ch + (rows - 1) * pad)
+	if player:GetAttribute("HudCompact") ~= compact then player:SetAttribute("HudCompact", compact) end
+end
+layoutDock()
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layoutDock)
 local dockButtons = {}
 for i, d in {{"Pets", "🐾", "Pets", "Your pets, eggs, nest and gear  ·  key P"}, {"Farm", "🏡", "Farm", "Decorate, plots, bag and toys  ·  bag: key B"},
 	{"World", "🗺️", "World", "Travel, friends' farms, fish and events  ·  map: key M"}, {"Shop", "🛒", "Shop", "Seeds and seed packs"},
-	{"Weapons", "⚔️", "Weapons", "Your weapons and 🎁 capsules  ·  key G"}} do
+	{"Weapons", "⚔️", "Weapons", "Your weapons and 🎁 capsules  ·  key G"}, {"Skills", "🌳", "Skills", "Your skill tree: 1 point per ⚔️ Hero Level  ·  key K"}} do
 	dockButtons[d[1]] = K.iconButton(dock, d[2], d[3], {Size = UDim2.fromOffset(84, 74), LayoutOrder = i, Tip = d[2] .. " " .. d[3], TipText = d[4]},
 		function()
 			if d[1] == "Weapons" then bridge:Fire("Weapons") return end -- (StarterPlayerScripts.Combat)
+			if d[1] == "Skills" then bridge:Fire("Skills") return end -- (StarterPlayerScripts.SkillTree)
 			openWin(d[1])
 		end)
 end
-local bell = K.iconButton(gui, "🔔", "To do", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 8), Size = UDim2.fromOffset(84, 70),
+-- 🌳 badge: skill points waiting
+local function skillBadge()
+	local n = player:GetAttribute("SkillPts") or 0
+	K.badge(dockButtons.Skills, n > 0 and n or nil)
+end
+player:GetAttributeChangedSignal("SkillPts"):Connect(skillBadge)
+skillBadge()
+local bell = K.iconButton(dock, "🔔", "To do", {Size = UDim2.fromOffset(76, 68), LayoutOrder = 7,
 	Tip = "🔔 To do", TipText = "Rewards waiting, daily quests and helpers"}, function() openWin("Todo") end)
 
 ---------------------------------------------------------------- 🌱 seed button (only on your farm)

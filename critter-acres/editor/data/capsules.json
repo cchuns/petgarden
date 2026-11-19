@@ -1,0 +1,82 @@
+[
+  {
+    "Id": "Basic",
+    "Name": "Basic Capsule",
+    "Icon": "🎁",
+    "Color": "#f0c878",
+    "Price": 300,
+    "Weights": {
+      "Common": 75,
+      "Rare": 22,
+      "Epic": 2.7,
+      "Legendary": 0.3,
+      "Mythic": 0
+    }
+  },
+  {
+    "Id": "Meadow",
+    "Name": "Meadow Capsule",
+    "Icon": "🌼",
+    "Color": "#96dc6e",
+    "Weights": {
+      "Common": 68,
+      "Rare": 27,
+      "Epic": 4.5,
+      "Legendary": 0.5,
+      "Mythic": 0
+    }
+  },
+  {
+    "Id": "Forest",
+    "Name": "Forest Capsule",
+    "Icon": "🍄",
+    "Color": "#aa64d2",
+    "Weights": {
+      "Common": 48,
+      "Rare": 38,
+      "Epic": 12,
+      "Legendary": 2,
+      "Mythic": 0
+    }
+  },
+  {
+    "Id": "Peaks",
+    "Name": "Peaks Capsule",
+    "Icon": "❄️",
+    "Color": "#82c8ff",
+    "Weights": {
+      "Common": 28,
+      "Rare": 45,
+      "Epic": 21,
+      "Legendary": 5.5,
+      "Mythic": 0
+    }
+  },
+  {
+    "Id": "Caves",
+    "Name": "Caves Capsule",
+    "Icon": "💎",
+    "Color": "#966eff",
+    "Weights": {
+      "Common": 12,
+      "Rare": 40,
+      "Epic": 35,
+      "Legendary": 11,
+      "Mythic": 0
+    }
+  },
+  {
+    "Id": "Volcano",
+    "Name": "Volcano Capsule",
+    "Icon": "🌋",
+    "Color": "#ff6e3c",
+    "Weights": {
+      "Rare": 40,
+      "Epic": 20,
+      "Legendary": 10,
+      "Mythic": 3,
+      "Common": 0,
+      "Uncommon": 50
+    }
+  }
+]

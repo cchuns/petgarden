@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Critter Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#fffaee; --card:#ffffff; --brown:#553c28; --soft:#8c735a; --line:#ebdcc3; --edge:#e6cda5;
+  --green:#6ec85f; --yellow:#ffcd50; --red:#f0786e; --grey:#d7d2cb; --blue:#78aff5; --pick:#ffe182; --bg:#f4ead8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--brown);font-family:Fredoka,Nunito,"Segoe UI Emoji","Segoe UI",system-ui,sans-serif;font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh;padding:14px;gap:12px}
+/* top bar */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--cream);border:3px solid var(--edge);border-radius:18px;padding:10px 14px}
+.top h1{font-size:22px;margin:0 8px 0 0;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:500;white-space:nowrap}
+.chip.warn{background:#fff0c8;border-color:var(--yellow)}
+.chip.bad{background:#ffe0dc;border-color:var(--red)}
+.chip.good{background:#dcf5d2;border-color:var(--green)}
+.spacer{flex:1}
+.btn{border:none;border-radius:12px;padding:8px 14px;font-weight:600;cursor:pointer;background:var(--card);box-shadow:0 3px 0 rgba(85,60,40,.18);border:2px solid var(--line);white-space:nowrap}
+.btn:hover{filter:brightness(1.04)}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+.btn.green{background:var(--green);border-color:#58ad4b;color:#fff}
+.btn.yellow{background:var(--yellow);border-color:#e6b43c}
+.btn.red{background:var(--red);border-color:#d45f56;color:#fff}
+.btn.blue{background:var(--blue);border-color:#5f94da;color:#fff}
+.btn.small{padding:4px 10px;font-size:13px;border-radius:10px}
+/* tabs */
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{border:3px solid var(--edge);background:var(--cream);border-radius:14px;padding:8px 16px;font-weight:600;font-size:16px;cursor:pointer}
+.tab.on{background:var(--pick);border-color:#e6aa32}
+.tab .n{opacity:.6;font-weight:500;margin-left:4px}
+/* main */
+.main{display:grid;grid-template-columns:minmax(260px,340px) 1fr minmax(240px,300px);gap:12px;min-height:0}
+.panel{background:var(--cream);border:3px solid var(--edge);border-radius:18px;display:flex;flex-direction:column;min-height:0}
+.panel h2{font-size:17px;margin:0;padding:12px 14px 6px;display:flex;align-items:center;gap:8px}
+.panel .body{overflow:auto;padding:6px 12px 14px;min-height:0;flex:1}
+.tools{display:flex;gap:6px;padding:0 12px 8px;flex-wrap:wrap}
+.tools input,.tools select{border:2px solid var(--line);border-radius:10px;padding:5px 8px;background:#fff;min-width:0;flex:1}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-left-width:8px;border-radius:12px;padding:7px 10px;margin-bottom:7px;cursor:pointer}
+.item:hover{border-color:var(--edge)}
+.item.on{background:#fff6d2;border-color:#e6aa32}
+.item .ic{font-size:24px;width:30px;text-align:center}
+.item .nm{font-weight:600;line-height:1.1}
+.item .sub{font-size:12px;color:var(--soft)}
+.item .badges{margin-left:auto;display:flex;gap:4px;font-size:14px}
+.item.err{box-shadow:inset 0 0 0 2px var(--red)}
+/* form */
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.field{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:8px 10px}
+.field.wide{grid-column:1/-1}
+.field label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
+.field .hint{font-size:12px;color:var(--soft);margin-top:4px}
+.field input[type=text],.field input[type=number],.field select,.field textarea{width:100%;border:2px solid var(--line);border-radius:9px;padding:5px 8px;background:#fffdf8}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue)}
+.field input.bad{border-color:var(--red);background:#fff1ef}
+.field input[type=color]{width:46px;height:32px;border:2px solid var(--line);border-radius:8px;padding:1px;background:#fff;vertical-align:middle}
+.field input:disabled{opacity:.6}
+.row{display:flex;gap:8px;align-items:center}
+.row > *{flex:1}
+.weights{display:grid;grid-template-columns:auto 1fr auto;gap:5px 8px;align-items:center}
+.weights .rn{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.weights .pc{font-size:12px;color:var(--soft);min-width:52px;text-align:right}
+.bar{height:10px;border-radius:6px;overflow:hidden;display:flex;margin-top:8px;background:#eee}
+.preview{font-size:13px;margin-top:6px;background:#fbf4e4;border-radius:8px;padding:6px 8px;line-height:1.5}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500}
+.toggle input{width:18px;height:18px}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.big{font-size:44px;width:64px;height:64px;display:grid;place-items:center;background:var(--card);border:3px solid var(--line);border-radius:16px}
+.head .t{font-size:22px;font-weight:700}
+.head .s{color:var(--soft)}
+.note{background:#fff0c8;border:2px solid var(--yellow);border-radius:12px;padding:8px 12px;margin-bottom:10px;font-size:14px}
+.note.blue{background:#e4efff;border-color:var(--blue)}
+.msgs .m{display:flex;gap:8px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-bottom:6px;font-size:13px;cursor:pointer}
+.msgs .m.e{border-color:var(--red);background:#fff4f2}
+.msgs .m.w{border-color:var(--yellow);background:#fffaea}
+.sect{font-weight:700;margin:12px 0 6px;font-size:14px}
+.studio{font-size:13px;line-height:1.5}
+.empty{color:var(--soft);text-align:center;padding:40px 10px}
+.tagrow{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px}
+.tagchip{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600;cursor:pointer;user-select:none}
+.tagchip:hover{border-color:var(--edge)}
+.tagchip.on{background:var(--pick);border-color:#e6aa32}
+.tagchip.edit{background:var(--cream);border-style:dashed}
+.tagchip .c{opacity:.55;font-weight:500}
+.item .tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.item .tags span{font-size:11px;background:#f6ecd8;border-radius:999px;padding:0 7px;font-weight:600}
+.tagbox{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tagbox input{border:2px dashed var(--line);border-radius:999px;padding:3px 10px;background:#fffdf8;width:150px}
+.modal{position:fixed;inset:0;background:rgba(60,40,25,.35);display:none;align-items:center;justify-content:center;z-index:8}
+.modal .win{background:var(--cream);border:3px solid var(--edge);border-radius:18px;padding:14px;width:min(420px,92vw);max-height:80vh;overflow:auto}
+.modal h3{margin:0 0 10px;font-size:18px}
+.trow{display:flex;gap:6px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:10px;padding:5px 8px;margin-bottom:6px}
+.trow input{flex:1;border:2px solid var(--line);border-radius:8px;padding:3px 8px}
+.trow .c{color:var(--soft);font-size:12px;white-space:nowrap}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#dcf5d2;border:3px solid var(--green);border-radius:14px;padding:10px 18px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.15);z-index:9;display:none}
+.toast.bad{background:#ffe0dc;border-color:var(--red)}
+@media (max-width:1100px){.main{grid-template-columns:1fr;overflow:auto}.panel{min-height:300px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>🛠 Critter Editor</h1>
+    <span class="chip" id="saveChip">⏳ Loading</span>
+    <span class="chip" id="studioChip">🎮 Studio: ?</span>
+    <span class="spacer"></span>
+    <button class="btn small" id="reloadBtn" title="Throw away unsaved changes and load the files again">↩ Undo changes</button>
+    <button class="btn green" id="saveBtn">💾 Save</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="main">
+    <div class="panel">
+      <h2 id="listTitle">List</h2>
+      <div class="tools">
+        <input id="search" type="text" placeholder="🔍 Find">
+        <select id="rarFilter"></select>
+      </div>
+      <div class="tools">
+        <select id="sortBy" title="Sort the list"></select>
+        <button class="btn small" id="sortDir" title="Flip the order"></button>
+      </div>
+      <div class="tools" id="listBtns"></div>
+      <div class="tagrow" id="tagFilter"></div>
+      <div class="body" id="list"></div>
+    </div>
+    <div class="panel">
+      <div class="body" id="detail"></div>
+    </div>
+    <div class="panel">
+      <h2>✅ Checks</h2>
+      <div class="body">
+        <div class="msgs" id="msgs"></div>
+        <div class="sect">🎮 Studio</div>
+        <div class="studio" id="studio"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="tagModal"><div class="win">
+  <h3>🏷️ <span id="tagModalTitle">Tags</span></h3>
+  <div id="tagRows"></div>
+  <div class="trow"><input id="tagNew" type="text" placeholder="New tag, e.g. Dagger"><button class="btn green small" id="tagAdd">＋ Add</button></div>
+  <div style="text-align:right;margin-top:8px"><button class="btn small" id="tagClose">✔ Done</button></div>
+</div></div>
+<input type="file" id="fileIn" accept=".fbx,.obj,.glb,.gltf" hidden>
+<script>
+"use strict";
+// ---------------------------------------------------------------- constants (match CritterData)
+const RAR = {Common:"#f0f0f0",Uncommon:"#6ecd5f",Rare:"#5aaaff",Epic:"#cd78ff",Legendary:"#ffc83c",Mythic:"#ff5050"};
+const WEAPON_RAR = ["Common","Uncommon","Rare","Epic","Legendary","Mythic"];
+const PET_RAR = ["Common","Rare","Epic","Legendary"]; // Uncommon/Mythic pets need more tuning tables first
+const STYLES = {Melee:"🗡️ Melee (bonk up close)",Magic:"🔮 Magic (bolts)",Range:"🏹 Range (shots from far)"};
+const CLASSES = {Speedy:"⚡ Speedy",Striker:"⚔️ Striker",Tank:"🛡️ Tank"};
+const JOBS = {Water:"💧 Water",Harvest:"🧺 Harvest",Plant:"🌱 Plant",Grow:"✨ Grow"};
+const MUTATIONS = ["Juicy","Golden","Frosty","Starry","Zapped","Prismatic"];
+const RES = {Coins:"💰",Fiber:"🌾",Stone:"🪨",Wood:"🪵",Mushroom:"🍄",Ice:"🧊",Iron:"⚙️",Gold:"🟡",Gem:"💎",Magma:"🔥",Obsidian:"⬛"}; // = Data.Resources
+const costText = c => Object.entries(c || {}).map(([r, n]) => `${RES[r] || r}${n}`).join(" ") || "free";
+const EFFECTS = {"":"— just pretty —",Water:"💦 Waters plots nearby",Grow:"🐝 Plots nearby grow faster"};
+const SAY_HELP = "Words in {curly brackets} turn into numbers for each rank: {Per%} = Per × rank as %, {Dmg%}, {Stun.1} (1 decimal), {Secs}, {r} = rank, {Per%+100} adds 100.";
+// ---------------------------------------------------------------- tabs
+const TABS = {
+  weapons:{icon:"⚔️",label:"Weapons",idKey:"Name",canAdd:true,canDelete:true,model:"weapons",rarities:WEAPON_RAR,tags:true,
+    title:it=>it.Display||it.Name, sub:it=>`${STYLES[it.Style]?.split(" ")[0]||"?"} ${it.Style} · 💥 ${it.Dmg}`,
+    blank:()=>({Name:"",Display:"New Weapon",Icon:"⚔️",Rarity:"Common",Style:"Melee",Dmg:15,Cd:0.5,Range:9,Fx:"#ffcc66"}),
+    fields:[
+      {key:"Name",label:"🆔 ID (code name)",type:"id",hint:"Letters and numbers, no spaces. The 3D model in Studio has this name."},
+      {key:"Display",label:"🏷️ Name players see",type:"text"},
+      {key:"Icon",label:"😀 Icon",type:"emoji"},
+      {key:"Rarity",label:"💎 Rarity",type:"select",options:WEAPON_RAR,hint:"Capsules pick a rarity first, then a weapon of that rarity."},
+      {key:"Style",label:"🎯 Style",type:"select",options:STYLES,hint:"Also picks which skill-bar moves it can use."},
+      {key:"Tags",label:"🏷️ Tags",type:"tags",wide:true},
+      {key:"Dmg",label:"💥 Damage (power)",type:"number",min:1,step:1,hint:"Hits roll 92–108% of this. Each ⭐ adds 10%, ✨ shiny ×1.5."},
+      {key:"Cd",label:"⏱️ Seconds between attacks",type:"number",min:0.1,step:0.05},
+      {key:"Range",label:"📏 Reach (studs)",type:"number",min:1,step:1,hint:"Melee ≈ 9–11, Magic ≈ 34–46, Range ≈ 42–50."},
+      {key:"Fx",label:"🎨 Effect color",type:"color"},
+      {key:"ModelFile",label:"🧊 3D model",type:"model",wide:true},
+    ]},
+  pets:{icon:"🐾",label:"Pets",idKey:"Species",canAdd:true,canDelete:true,model:"pets",rarities:PET_RAR,tags:true,
+    title:it=>it.Species, sub:it=>`${CLASSES[it.Class]||"?"} · ${JOBS[it.Job]||"?"}${it.Secret?" · 🤫":""}`,
+    blank:()=>({Species:"",Rarity:"Common",Class:"Striker",Job:"Harvest",JobText:"harvests crops",Speed:10,Color:"#ffcc88",Ear:"#e09050"}),
+    fields:[
+      {key:"Species",label:"🆔 Name (also the ID)",type:"id",hint:"Players see this name. Letters only. The 3D model in Studio has this name."},
+      {key:"Rarity",label:"💎 Rarity",type:"select",options:PET_RAR,hint:"Eggs pick a rarity first, then a pet of that rarity."},
+      {key:"Class",label:"⚔️ Fight class",type:"select",options:CLASSES},
+      {key:"Job",label:"🧑‍🌾 Farm job",type:"select",options:JOBS,rerender:true},
+      {key:"JobText",label:"💬 Job words",type:"text",hint:"Short! e.g. “waters crops super fast”."},
+      {key:"Tags",label:"🏷️ Tags",type:"tags",wide:true},
+      {key:"Speed",label:"👟 Walk speed",type:"number",min:1,step:1,hint:"Others are 8–16."},
+      {key:"Boost",label:"✨ Grow boost",type:"number",optional:true,min:0,step:0.05,showIf:it=>it.Job==="Grow",hint:"0.3 = crops grow 30% faster per visit."},
+      {key:"Bonus",label:"🍓 Bonus berries",type:"number",optional:true,min:0,step:1,showIf:it=>it.Job==="Harvest"},
+      {key:"Mutate",label:"🌈 Mutation chance",type:"mutate",hint:"Each time it works a plot, the berry may get this mutation."},
+      {key:"Color",label:"🎨 Body color",type:"color",hint:"Used by portraits and the simple look."},
+      {key:"Ear",label:"🎨 Ear / accent color",type:"color"},
+      {key:"Waters",label:"💧 Also waters crops",type:"bool"},
+      {key:"Rainbow",label:"🌈 Rainbow shimmer",type:"bool"},
+      {key:"Flyer",label:"🪽 Flies (dragon rig only)",type:"bool"},
+      {key:"Secret",label:"🤫 Secret (only from the 💕 nest)",type:"bool",hint:"Secret pets never come out of eggs."},
+      {key:"ModelFile",label:"🧊 3D model",type:"model",wide:true},
+    ]},
+  eggs:{icon:"🥚",label:"Eggs",idKey:"Id",canAdd:true,canDelete:true,lockedDelete:true,rarities:null,
+    title:it=>it.Name, sub:it=>it.Shop?`🛒 ${pct(it.Shop.Chance)} · 💰${it.Shop.Price}`:(it.NoDrop?"no drops":"drops"),
+    blank:()=>({Id:"",Name:"New Egg",Icon:"🥚",Weights:{Common:50,Rare:35,Epic:12,Legendary:3},NoDrop:true,Shop:{Chance:0.05,Price:2000}}),
+    fields:[
+      {key:"Id",label:"🆔 ID (code name)",type:"id"},
+      {key:"Name",label:"🏷️ Name players see",type:"text"},
+      {key:"Icon",label:"😀 Icon",type:"emoji"},
+      {key:"Weights",label:"🎲 What it hatches into",type:"weights",options:PET_RAR,wide:true},
+      {key:"Shop",label:"🛒 Sold in the egg shop",type:"shop",wide:true},
+      {key:"NoDrop",label:"🚫 Never drops (shop / nest only)",type:"bool"},
+      {key:"Limited",label:"🍂 Limited season egg",type:"bool"},
+      {key:"Outfit",label:"👒 Pets from it wear",type:"text",optional:true,hint:"Outfit name, e.g. Leaf Crown. Leave empty for none."},
+    ]},
+  capsules:{icon:"🎁",label:"Capsules",idKey:"Id",canAdd:false,canDelete:false,rarities:null,
+    title:it=>it.Name, sub:it=>it.Price?`🛒 💰${it.Price}`:`drops in ${it.Id}`,
+    note:"🎁 Capsules belong to the lands, so you can change them but not add or remove them.",
+    fields:[
+      {key:"Id",label:"🆔 ID",type:"id",locked:true},
+      {key:"Name",label:"🏷️ Name players see",type:"text"},
+      {key:"Icon",label:"😀 Icon",type:"emoji"},
+      {key:"Color",label:"🎨 Color",type:"color"},
+      {key:"Price",label:"💰 Price",type:"number",optional:true,min:0,step:10,showIf:it=>it.Id==="Basic"},
+      {key:"Weights",label:"🎲 Rarity chances",type:"weights",options:WEAPON_RAR,wide:true},
+    ]},
+  decor:{icon:"🏡",label:"Decorations",idKey:"Name",spacedId:true,canAdd:true,canDelete:true,model:"decor",rarities:null,
+    builtIn:["Flower Bed","White Fence","Hay Bale","Oak Tree","Bench","Lamp Post","Mushroom House","Snowman","Pond","Fountain",
+      "Windmill","Crystal Lamp","Gold Statue","Lava Lamp","Sprinkler","Beehive"],
+    title:it=>it.Name, sub:it=>`${costText(it.Cost)}${it.Effect==="Water"?" · 💦":it.Effect==="Grow"?" · 🐝":""}`,
+    blank:()=>({Name:"",Icon:"🎁",Cost:{Coins:50}}),
+    note:"🏡 New decorations show as a 🧱 placeholder box in the game until Claude builds their 3D shape. Collect a few, then ask Claude: “build the new decorations”.",
+    fields:[
+      {key:"Name",label:"🆔 Name (also the ID)",type:"id",hint:"Players see this name. Letters, numbers and spaces. It's saved on players' farms, so it can't change once it's in the game."},
+      {key:"Look",label:"✏️ Look idea for Claude",type:"text",optional:true,hint:"Short! e.g. “blue mailbox with a red flag”. Only used when Claude builds the shape."},
+      {key:"ModelFile",label:"🧊 3D shape",type:"model",wide:true},
+      {key:"Icon",label:"😀 Icon",type:"emoji"},
+      {key:"Cost",label:"💰 Cost (coins and resources)",type:"cost",wide:true},
+      {key:"Effect",label:"✨ What it does",type:"select",options:EFFECTS,optional:true,rerender:true,
+        onSet:it=>{ if (it.Effect && it.Range === undefined) it.Range = 14; if (it.Effect === "Grow" && it.Boost === undefined) it.Boost = 0.25;
+          if (!it.Effect) delete it.Range; if (it.Effect !== "Grow") delete it.Boost; }},
+      {key:"Range",label:"⭕ Reach (studs)",type:"number",min:1,step:1,showIf:it=>!!it.Effect,hint:"Plots this close get the effect. A plot is about 8 studs."},
+      {key:"Boost",label:"🐝 Grow boost",type:"number",min:0,step:0.05,showIf:it=>it.Effect==="Grow",hint:"0.25 = plots nearby grow 25% faster."},
+    ]},
+  skills:{icon:"🌳",label:"Skills",idKey:"Id",canAdd:false,canDelete:false,rarities:null,group:"Branch",
+    title:it=>it.Name, sub:it=>`${it.Branch} · Lv ${it.Lv} · max ${it.Max}${it.Kind==="Active"?" · ⚡":""}`,
+    note:"🌳 What each skill DOES is in the game code, so skills can be changed here but not added or removed. Ask Claude for new skills.",
+    fields:[
+      {key:"Id",label:"🆔 ID",type:"id",locked:true},
+      {key:"Name",label:"🏷️ Name",type:"text"},
+      {key:"Icon",label:"😀 Icon",type:"emoji"},
+      {key:"Lv",label:"⚔️ Hero level needed",type:"number",min:1,max:50,step:1},
+      {key:"Max",label:"⬆️ Max rank",type:"number",min:1,max:10,step:1},
+      {key:"Req",label:"🔒 Needs this skill first",type:"req"},
+      {key:"Row",label:"↕️ Row in the tree",type:"number",min:1,step:1},
+      {key:"Col",label:"↔️ Column (1.5 = middle)",type:"number",min:1,step:0.5},
+      {key:"Per",label:"📈 Per rank",type:"number",optional:true,step:0.01,showIf:it=>it.Per!==undefined,hint:"0.08 = +8% each rank."},
+      {key:"Cd",label:"⏱️ Cooldown (s)",type:"number",optional:true,min:0,step:1,showIf:it=>it.Cd!==undefined},
+      {key:"R",label:"⭕ Circle size (studs)",type:"number",optional:true,min:1,step:1,showIf:it=>it.R!==undefined},
+      {key:"Scale",label:"📈 Numbers per rank (start + per rank)",type:"scale",wide:true,showIf:it=>it.Scale},
+      {key:"Say",label:"💬 Text players see",type:"say",wide:true},
+    ]},
+};
+// ---------------------------------------------------------------- state
+const S = {data:{}, saved:{}, origIds:{}, tab:"weapons", sel:{}, studio:{}, version:0, filter:"", rar:"", errors:[], models:new Set(),
+  tags:{}, savedTags:"{}", tagFilter:new Set(), sort:{}};
+try { Object.assign(S.sort, JSON.parse(localStorage.getItem("critterSort") || "{}")); } catch {}
+// ↕️ list sorting: [label, value of an item]. "" = file order (the order the game uses).
+const rarRank = k => it => (TABS[k].rarities || []).indexOf(it.Rarity);
+const SORTS = {
+  weapons:{"":"📄 File order", rar:["💎 Tier (rarity)", rarRank("weapons")], dmg:["💥 Damage", it=>+it.Dmg||0],
+    dps:["🔥 Damage per second", it=>(+it.Dmg||0)/Math.max(0.05,+it.Cd||1)], cd:["⏱️ Attack speed (seconds)", it=>+it.Cd||0],
+    range:["📏 Reach", it=>+it.Range||0], name:["🔤 Name", it=>it.Display||it.Name]},
+  pets:{"":"📄 File order", rar:["💎 Tier (rarity)", rarRank("pets")], speed:["👟 Walk speed", it=>+it.Speed||0],
+    name:["🔤 Name", it=>it.Species]},
+  eggs:{"":"📄 File order", price:["💰 Shop price", it=>it.Shop?.Price ?? -1], chance:["🛒 Shop chance", it=>it.Shop?.Chance ?? -1],
+    name:["🔤 Name", it=>it.Name]},
+  capsules:{"":"📄 File order", price:["💰 Price", it=>it.Price ?? -1], name:["🔤 Name", it=>it.Name]},
+  decor:{"":"📄 Shop order", coins:["💰 Coin cost", it=>it.Cost?.Coins || 0],
+    res:["🪵 Resources needed", it=>Object.entries(it.Cost||{}).reduce((a,[r,n])=>a+(r==="Coins"?0:+n||0),0)],
+    name:["🔤 Name", it=>it.Name]},
+  skills:{"":"📄 Tree order", lv:["⚔️ Hero level needed", it=>+it.Lv||0], max:["⬆️ Max rank", it=>+it.Max||0], name:["🔤 Name", it=>it.Name]},
+};
+const sortOf = k => (S.sort[k] = S.sort[k] || {by:"", desc:false});
+function saveSort(){ try { localStorage.setItem("critterSort", JSON.stringify(S.sort)); } catch {} }
+const tagsOf = k => (S.tags[k] = S.tags[k] || []);
+const dataOf = k => k === "tags" ? S.tags : S.data[k];
+const iconOf = k => k === "tags" ? "🏷️" : TABS[k].icon;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = x => { const p = x * 100; return (p >= 1 || p === 0 ? Math.round(p * 10) / 10 : Math.round(p * 100) / 100) + "%"; };
+const clone = o => JSON.parse(JSON.stringify(o));
+function toast(text, bad){ const t=$("toast"); t.textContent=text; t.className="toast"+(bad?" bad":""); t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",3200); }
+// ---------------------------------------------------------------- load / save
+async function load(){
+  const r = await fetch("/api/data"); const j = await r.json();
+  S.version = j.version;
+  for (const k of Object.keys(TABS)) {
+    S.data[k] = j[k] || [];
+    S.saved[k] = JSON.stringify(S.data[k]);
+    S.origIds[k] = new Set(S.data[k].map(it => it[TABS[k].idKey]));
+    if (!S.sel[k] || !S.data[k].some(it => it[TABS[k].idKey] === S.sel[k])) S.sel[k] = S.data[k][0]?.[TABS[k].idKey];
+  }
+  S.tags = (j.tags && !Array.isArray(j.tags)) ? j.tags : {};
+  S.savedTags = JSON.stringify(S.tags);
+  // any tag an item uses but the tag list lacks (e.g. tags.json didn't save) comes back here; Save then writes it
+  for (const k of Object.keys(TABS)) if (TABS[k].tags) for (const it of S.data[k]) for (const t of it.Tags || []) {
+    if (!tagsOf(k).includes(t)) tagsOf(k).push(t);
+  }
+  S.tagFilter = new Set();
+  try { const m = await (await fetch("/api/models")).json(); S.models = new Set(m.files); S.modelFolder = m.folder; } catch {}
+  renderAll();
+}
+function dirtyTabs(){
+  const d = Object.keys(TABS).filter(k => JSON.stringify(S.data[k]) !== S.saved[k]);
+  if (JSON.stringify(S.tags) !== S.savedTags) d.push("tags");
+  return d;
+}
+async function save(){
+  validate();
+  if (S.errors.some(e => e.level === "e")) { toast("❌ Fix the red problems first", true); return; }
+  const tabs = dirtyTabs();
+  if (!tabs.length) { toast("Nothing to save"); return; }
+  for (const k of tabs) {
+    const body = JSON.stringify(dataOf(k), null, 2) + "\n";
+    const r = await fetch("/api/data/" + k, {method:"PUT", body});
+    const j = await r.json();
+    if (!r.ok) { toast("❌ " + (j.error || "save failed"), true); return; }
+    if (k === "tags") S.savedTags = JSON.stringify(S.tags); else S.saved[k] = JSON.stringify(S.data[k]);
+    S.version = j.version;
+  }
+  toast("💾 Saved! Now click ⬇ Pull in Studio (or wait for auto-pull)");
+  renderTop(); renderList(); renderStudio();
+}
+// ---------------------------------------------------------------- checks
+function validate(){
+  const E = [];
+  const add = (level, tab, id, text) => E.push({level, tab, id, text});
+  for (const [k, T] of Object.entries(TABS)) {
+    const seen = new Set();
+    for (const it of S.data[k]) {
+      const id = it[T.idKey];
+      if (!id) add("e", k, id, `${T.icon} An item has no ID`);
+      else if (!(T.spacedId ? /^[A-Za-z][A-Za-z0-9 ']*$/ : /^[A-Za-z][A-Za-z0-9_]*$/).test(id)) add("e", k, id, `${T.icon} “${id}”: ID can only use letters, numbers and _`);
+      if (id && seen.has(id)) add("e", k, id, `${T.icon} Two items are called “${id}”`);
+      seen.add(id);
+      for (const f of T.fields) {
+        if (f.type === "number" && !(f.optional && it[f.key] === undefined) && (!f.showIf || f.showIf(it))) {
+          const v = it[f.key];
+          if (typeof v !== "number" || !isFinite(v)) add("e", k, id, `${T.icon} ${id}: “${f.label.replace(/^\S+ /,"")}” needs a number`);
+          else if (f.min !== undefined && v < f.min) add("e", k, id, `${T.icon} ${id}: “${f.label.replace(/^\S+ /,"")}” is below ${f.min}`);
+        }
+      }
+      for (const key of ["Display","Name","JobText","Say"]) if (typeof it[key] === "string" && it[key].includes("🪙")) add("w", k, id, `${T.icon} ${id}: 🪙 doesn't show in Roblox, use 💰`);
+    }
+  }
+  const W = S.data.weapons, P = S.data.pets;
+  for (const w of W) {
+    const r = w.Range;
+    if (w.Style === "Melee" && r > 16) add("w","weapons",w.Name,`⚔️ ${w.Name}: Melee reach ${r} is very long (others 9–11)`);
+    if (w.Style !== "Melee" && r < 20) add("w","weapons",w.Name,`⚔️ ${w.Name}: ${w.Style} reach ${r} is short (others 34–50)`);
+  }
+  for (const c of S.data.capsules) {
+    const tot = Object.values(c.Weights||{}).reduce((a,b)=>a+(+b||0),0);
+    if (tot <= 0) add("e","capsules",c.Id,`🎁 ${c.Name}: all chances are 0`);
+    for (const [rar, w] of Object.entries(c.Weights||{})) if (w > 0 && !W.some(x => x.Rarity === rar))
+      add("e","capsules",c.Id,`🎁 ${c.Name} can roll ${rar}, but no weapon is ${rar}`);
+  }
+  for (const e of S.data.eggs) {
+    const tot = Object.values(e.Weights||{}).reduce((a,b)=>a+(+b||0),0);
+    if (tot <= 0) add("e","eggs",e.Id,`🥚 ${e.Name}: all chances are 0`);
+    for (const [rar, w] of Object.entries(e.Weights||{})) if (w > 0 && !P.some(p => p.Rarity === rar && !p.Secret))
+      add("e","eggs",e.Id,`🥚 ${e.Name} can hatch ${rar}, but no (non-secret) pet is ${rar}`);
+    if (e.Shop && !(e.Shop.Price >= 0)) add("e","eggs",e.Id,`🥚 ${e.Name}: shop price needs a number`);
+  }
+  const shopTot = S.data.eggs.filter(e => e.Shop).reduce((a,e)=>a+(+e.Shop.Chance||0),0);
+  if (S.data.eggs.some(e => e.Shop) && Math.abs(shopTot - 1) > 0.001) add("w","eggs",null,`🛒 Egg shop chances add up to ${pct(shopTot)}, not 100%`);
+  for (const p of P) {
+    if (!PET_RAR.includes(p.Rarity)) add("e","pets",p.Species,`🐾 ${p.Species}: pets can only be ${PET_RAR.join(", ")}`);
+    if (p.Mutate && !MUTATIONS.includes(p.Mutate.Name)) add("e","pets",p.Species,`🐾 ${p.Species}: unknown mutation`);
+    if (p.Flyer && !["Viridrake"].includes(p.Species)) add("w","pets",p.Species,`🐾 ${p.Species}: flying only looks right with the dragon rig`);
+  }
+  for (const d of S.data.decor || []) {
+    if (!Object.values(d.Cost || {}).some(n => n > 0)) add("w","decor",d.Name,`🏡 ${d.Name} is free`);
+    for (const [r, n] of Object.entries(d.Cost || {})) if (!(n >= 0) || n % 1) add("e","decor",d.Name,`🏡 ${d.Name}: ${r} cost needs a whole number`);
+  }
+  const SK = S.data.skills, byId = Object.fromEntries(SK.map(s => [s.Id, s]));
+  for (const s of SK) {
+    if (s.Req) {
+      const q = byId[s.Req];
+      if (!q) add("e","skills",s.Id,`🌳 ${s.Name}: needs a skill that doesn't exist`);
+      else if (q.Branch !== s.Branch) add("e","skills",s.Id,`🌳 ${s.Name}: needed skill is in another branch`);
+      else if (q.Lv > s.Lv) add("w","skills",s.Id,`🌳 ${s.Name}: needs ${q.Name}, which unlocks at a higher level`);
+      let cur = s, n = 0; while (cur && cur.Req && n < 30) { cur = byId[cur.Req]; n++; if (cur === s) { add("e","skills",s.Id,`🌳 ${s.Name}: the “needs” chain loops`); break; } }
+    }
+    const bad = sayTokens(s.Say).filter(t => !(t === "r" || t === "Per" || (s.Scale && s.Scale[t])));
+    if (bad.length) add("e","skills",s.Id,`🌳 ${s.Name}: text uses {${bad.join("}, {")}} which isn't a number of this skill`);
+  }
+  const spots = {};
+  for (const s of SK) { const key = `${s.Branch}:${s.Row}:${s.Col}`; if (spots[key]) add("w","skills",s.Id,`🌳 ${s.Name} sits on the same tree spot as ${spots[key]}`); spots[key] = s.Name; }
+  // studio model checks
+  const sm = S.studio.models;
+  if (sm) {
+    for (const w of W) if (!sm.weapons?.includes(w.Name)) add("w","weapons",w.Name,`🧊 ${w.Display}: no 3D model in Studio yet (shows a glowing stick)`);
+    if (sm.decor) for (const d of S.data.decor || []) if (!sm.decor.includes(d.Name.replace(/ /g, ""))) add("w","decor",d.Name,`🧱 ${d.Name}: placeholder box for now (ask Claude to build its shape)`);
+    for (const p of P) if (!sm.pets || !(p.Species in sm.pets)) add("w","pets",p.Species,`🧊 ${p.Species}: no 3D model in Studio yet (simple ball look)`);
+  }
+  S.errors = E;
+}
+// ---------------------------------------------------------------- say template (same rules as CritterData.ApplyGameData)
+function sayTokens(t){ return [...String(t||"").matchAll(/\{([A-Za-z]+)%?[+-]?\d*(?:\.\d+)?\}/g)].map(m => m[1]); }
+function scaleVal(sc, r){ let v = (sc.Base||0) + (sc.Per||0) * r; if (sc.Round === "up") v = Math.ceil(v - 1e-9); if (sc.Round === "down") v = Math.floor(v + 1e-9); return v; }
+function sayText(s, r){
+  return String(s.Say||"").replace(/\{([A-Za-z]+)(%?)([+-]?\d*)(?:\.(\d+))?\}/g, (m, name, pc, add, dec) => {
+    let v = name === "r" ? r : name === "Per" ? (s.Per||0) * r : s.Scale && s.Scale[name] ? scaleVal(s.Scale[name], r) : 0;
+    if (pc) v = Math.floor(v * 100 + 0.5);
+    if (add && add !== "+" && add !== "-") v += +add;
+    return dec ? v.toFixed(+dec) : String(Math.floor(v + 0.5));
+  });
+}
+// ---------------------------------------------------------------- render
+function renderAll(){ validate(); renderTop(); renderTabs(); renderList(); renderDetail(); renderMsgs(); renderStudio(); }
+function soft(){ validate(); renderTop(); renderTabs(); renderList(); renderMsgs(); renderStudio(); }
+function renderTop(){
+  const d = dirtyTabs(), errs = S.errors.filter(e => e.level === "e").length;
+  const c = $("saveChip");
+  if (errs) { c.className = "chip bad"; c.textContent = `❌ ${errs} problem${errs>1?"s":""} to fix`; }
+  else if (d.length) { c.className = "chip warn"; c.textContent = `✏️ Not saved: ${d.map(iconOf).join(" ")}`; }
+  else { c.className = "chip good"; c.textContent = `✅ Saved (v${S.version})`; }
+  $("saveBtn").disabled = !d.length;
+  $("reloadBtn").disabled = !d.length;
+  const sc = $("studioChip"), st = S.studio;
+  if (!st.synced) { sc.className = "chip"; sc.textContent = "🎮 Studio: not pulled yet"; }
+  else if (st.synced >= S.version) { sc.className = "chip good"; sc.textContent = `🎮 Studio has v${st.synced}`; }
+  else { sc.className = "chip warn"; sc.textContent = `🎮 Studio has v${st.synced} → ⬇ Pull`; }
+}
+function renderTabs(){
+  $("tabs").innerHTML = Object.entries(TABS).map(([k, T]) => {
+    const n = S.errors.filter(e => e.tab === k && e.level === "e").length;
+    return `<button class="tab${k===S.tab?" on":""}" data-tab="${k}">${T.icon} ${T.label}<span class="n">${S.data[k]?.length ?? ""}</span>${n?` ❌${n}`:""}${JSON.stringify(S.data[k])!==S.saved[k]?" ✏️":""}</button>`;
+  }).join("");
+  for (const b of $("tabs").querySelectorAll(".tab")) b.onclick = () => { S.tab = b.dataset.tab; S.filter = ""; S.rar = ""; S.tagFilter = new Set(); $("search").value = ""; renderAll(); };
+}
+function modelState(T, it){
+  if (!T.model) return null;
+  const id = it[T.idKey], sm = S.studio.models;
+  if (T.model === "weapons" && sm?.weapons?.includes(id)) return ["✅","3D model is in the game"];
+  if (T.model === "decor") {
+    if (sm?.decor) return sm.decor.includes(String(id).replace(/ /g, "")) ? ["✅","Has its own 3D shape"] : ["🧱","Placeholder box: ask Claude to build its shape"];
+    return T.builtIn.includes(id) ? ["✅","Has its own 3D shape"] : ["🧱","Placeholder box until Claude builds its shape (open Studio + the plugin to check)"];
+  }
+  if (T.model === "pets" && sm?.pets && id in sm.pets) return sm.pets[id] === "Blob" ? ["🟡","In the game (one piece, no face rig yet — ask Claude)"] : ["✅",`In the game (${sm.pets[id]} rig)`];
+  if (it.ModelFile && S.models.has(it.ModelFile)) return ["📦","File ready: import it in Studio, then use the CritterSync plugin"];
+  return sm ? ["❌","No 3D model yet"] : ["❔","Open Studio + the plugin to check models"];
+}
+function renderList(){
+  const T = TABS[S.tab], list = S.data[S.tab] || [];
+  $("listTitle").innerHTML = `${T.icon} ${T.label}`;
+  const rs = T.rarities;
+  $("rarFilter").style.display = rs ? "" : "none";
+  $("rarFilter").innerHTML = `<option value="">All rarities</option>` + (rs||[]).map(r => `<option${r===S.rar?" selected":""}>${r}</option>`).join("");
+  $("listBtns").innerHTML = (T.canAdd ? `<button class="btn green small" id="addBtn">＋ New</button>` : "") +
+    (T.canAdd ? `<button class="btn small" id="dupBtn">⧉ Copy</button>` : "") +
+    (T.canDelete ? `<button class="btn red small" id="delBtn">🗑 Delete</button>` : "");
+  if ($("addBtn")) $("addBtn").onclick = () => addItem(T.blank());
+  if ($("dupBtn")) $("dupBtn").onclick = () => { const it = cur(); if (it) { const c = clone(it); delete c.ModelFile; addItem(c, it[T.idKey]); } };
+  if ($("delBtn")) $("delBtn").onclick = delItem;
+  // 🏷️ tag filter: click tags to show only items that have ALL the picked tags
+  const tf = $("tagFilter");
+  if (T.tags) {
+    const tags = tagsOf(S.tab);
+    tf.style.display = "";
+    tf.innerHTML = tags.map(t => `<span class="tagchip${S.tagFilter.has(t) ? " on" : ""}" data-t="${esc(t)}">${esc(t)} <span class="c">${list.filter(it => (it.Tags||[]).includes(t)).length}</span></span>`).join("") +
+      (S.tagFilter.size ? `<span class="tagchip" data-clear="1">✖ Clear</span>` : "") +
+      `<span class="tagchip edit" data-edit="1">🏷️ ${tags.length ? "Edit tags" : "Make tags"}</span>`;
+    for (const c of tf.querySelectorAll(".tagchip")) c.onclick = () => {
+      if (c.dataset.edit) return openTags();
+      if (c.dataset.clear) S.tagFilter.clear();
+      else if (S.tagFilter.has(c.dataset.t)) S.tagFilter.delete(c.dataset.t); else S.tagFilter.add(c.dataset.t);
+      renderList();
+    };
+  } else { tf.style.display = "none"; tf.innerHTML = ""; }
+  // ↕️ sort: pick what to sort by, ⬆/⬇ flips it. Ties keep file order. Only changes the view, never the saved order.
+  const so = sortOf(S.tab), SO = SORTS[S.tab] || {"":"📄 File order"};
+  if (!(so.by in SO)) so.by = "";
+  $("sortBy").innerHTML = Object.entries(SO).map(([v, d]) => `<option value="${v}"${v===so.by?" selected":""}>↕️ ${esc(typeof d === "string" ? d : d[0])}</option>`).join("");
+  $("sortBy").onchange = e => { so.by = e.target.value; saveSort(); renderList(); };
+  $("sortDir").textContent = so.desc ? "⬇️ High → low" : "⬆️ Low → high";
+  $("sortDir").onclick = () => { so.desc = !so.desc; saveSort(); renderList(); };
+  const order = list.map((it, i) => i);
+  if (so.by) {
+    const val = SO[so.by][1], dir = so.desc ? -1 : 1;
+    order.sort((a, b) => {
+      const A = val(list[a]), B = val(list[b]);
+      const c = typeof A === "string" || typeof B === "string" ? String(A ?? "").localeCompare(String(B ?? "")) : A - B;
+      return c * dir || a - b;
+    });
+  } else if (so.desc) order.reverse();
+  const q = S.filter.toLowerCase();
+  let html = "", lastGroup = null;
+  order.forEach(i => { const it = list[i];
+    const id = it[T.idKey];
+    if (q && !JSON.stringify(it).toLowerCase().includes(q)) return;
+    if (S.rar && it.Rarity !== S.rar) return;
+    for (const t of S.tagFilter) if (!(it.Tags||[]).includes(t)) return;
+    if (T.group && !so.by && it[T.group] !== lastGroup) { lastGroup = it[T.group]; html += `<div class="sect">${esc(lastGroup)}</div>`; }
+    const col = RAR[it.Rarity] || it.Color || "#ddd";
+    const ms = modelState(T, it);
+    const bad = S.errors.some(e => e.tab === S.tab && e.id === id && e.level === "e");
+    html += `<div class="item${id===S.sel[S.tab]?" on":""}${bad?" err":""}" data-i="${i}" style="border-left-color:${esc(col)}">
+      <div class="ic">${esc(it.Icon || "🐾")}</div>
+      <div><div class="nm">${esc(T.title(it) || "(no name)")}</div><div class="sub">${esc(it.Rarity ? it.Rarity + " · " : "")}${esc(T.sub(it))}</div>${
+        it.Tags && it.Tags.length ? `<div class="tags">${it.Tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}</div>
+      <div class="badges">${ms ? `<span title="${esc(ms[1])}">${ms[0]}</span>` : ""}${!S.origIds[S.tab].has(id) ? `<span title="New, not in the game yet">🆕</span>` : ""}</div></div>`;
+  });
+  $("list").innerHTML = html || `<div class="empty">Nothing here</div>`;
+  for (const el of $("list").querySelectorAll(".item")) el.onclick = () => { S.sel[S.tab] = list[+el.dataset.i][T.idKey]; renderList(); renderDetail(); };
+}
+function cur(){ const T = TABS[S.tab]; return (S.data[S.tab]||[]).find(it => it[T.idKey] === S.sel[S.tab]); }
+function addItem(obj, baseId){
+  const T = TABS[S.tab], list = S.data[S.tab];
+  const sep = T.spacedId ? " " : "";
+  let base = (baseId || ({weapons:"NewWeapon",pets:"Newpet",eggs:"NewEgg",decor:"New Decoration"}[S.tab])).replace(/ ?\d+$/,""), n = 2, id = base + (baseId ? sep + n : "");
+  while (list.some(it => it[T.idKey] === id)) id = base + sep + (n++);
+  obj[T.idKey] = id;
+  if (S.tab === "weapons" && !baseId) obj.Display = "New Weapon";
+  const i = list.findIndex(it => it[T.idKey] === S.sel[S.tab]);
+  list.splice(i >= 0 ? i + 1 : list.length, 0, obj);
+  S.sel[S.tab] = id;
+  renderAll();
+}
+function delItem(){
+  const T = TABS[S.tab], it = cur(); if (!it) return;
+  const id = it[T.idKey];
+  if (T.builtIn && T.builtIn.includes(id)) { toast("🔒 This decoration is built into the game, so it can't be deleted", true); return; }
+  if (T.lockedDelete && S.origIds[S.tab].has(id)) { toast("🔒 This egg is used by other game parts (drops, nest, shop), so it can't be deleted", true); return; }
+  const msg = S.origIds[S.tab].has(id)
+    ? (S.tab === "decor" ? `Delete ${id}?\n\nPlayers who already bought or placed it will lose it.`
+      : `Delete ${id}?\n\nPlayers who already own it keep it, but it will never drop or hatch again.`)
+    : `Delete ${id}?`;
+  if (!confirm(msg)) return;
+  const list = S.data[S.tab], i = list.indexOf(it);
+  list.splice(i, 1);
+  S.sel[S.tab] = list[Math.min(i, list.length - 1)]?.[T.idKey];
+  renderAll();
+}
+// ---------------------------------------------------------------- detail form
+function renderDetail(){
+  const T = TABS[S.tab], it = cur(), box = $("detail");
+  if (!it) { box.innerHTML = `<div class="empty">Pick something on the left${T.canAdd ? " or press ＋ New" : ""}</div>`; return; }
+  const id = it[T.idKey];
+  let html = (T.note ? `<div class="note blue">${esc(T.note)}</div>` : "") +
+    `<div class="head"><div class="big">${esc(it.Icon || "🐾")}</div><div><div class="t">${esc(T.title(it))}</div><div class="s">${esc(it.Rarity || "")} ${esc(T.sub(it))}</div></div></div>`;
+  const errs = S.errors.filter(e => e.tab === S.tab && e.id === id);
+  if (errs.length) html += `<div class="msgs">${errs.map(e => `<div class="m ${e.level}">${e.level==="e"?"❌":"⚠️"} ${esc(e.text)}</div>`).join("")}</div>`;
+  html += `<div class="form">`;
+  T.fields.forEach((f, fi) => {
+    if (f.showIf && !f.showIf(it)) return;
+    html += `<div class="field${f.wide||["weights","shop","scale","say","model"].includes(f.type)?" wide":""}"><label>${esc(f.label)}</label>${fieldHtml(T, it, f, fi)}${f.hint?`<div class="hint">${esc(f.hint)}</div>`:""}</div>`;
+  });
+  box.innerHTML = html + `</div>`;
+  wire(T, it);
+}
+function opts(options, val){
+  const entries = Array.isArray(options) ? options.map(o => [o, o]) : Object.entries(options);
+  return entries.map(([v, t]) => `<option value="${esc(v)}"${v===val?" selected":""}>${esc(t)}</option>`).join("");
+}
+function fieldHtml(T, it, f, fi){
+  const v = it[f.key], a = `data-f="${fi}"`;
+  switch (f.type) {
+    case "id": {
+      const locked = f.locked || S.origIds[S.tab].has(v);
+      return `<input type="text" ${a} value="${esc(v)}"${locked?" disabled":""}>` + (locked && !f.locked ? `<div class="hint">🔒 Already in the game (players may own it). To rename, ⧉ Copy then 🗑 Delete.</div>` : "");
+    }
+    case "text": case "emoji": return `<input type="text" ${a} value="${esc(v ?? "")}"${f.type==="emoji"?` style="font-size:22px;max-width:120px"`:""}>`;
+    case "number": return `<input type="number" ${a} value="${v ?? ""}" step="${f.step ?? "any"}"${f.min!==undefined?` min="${f.min}"`:""}${f.max!==undefined?` max="${f.max}"`:""}${f.optional?` placeholder="(none)"`:""}>`;
+    case "select": return `<select ${a}>${opts(f.options, v)}</select>`;
+    case "tags": {
+      const all = tagsOf(S.tab), mine = v || [];
+      return `<div class="tagbox">${all.map(t => `<span class="tagchip${mine.includes(t) ? " on" : ""}" data-tag="${esc(t)}">${mine.includes(t) ? "✔ " : ""}${esc(t)}</span>`).join("")}
+        <input type="text" id="newTag" maxlength="24" placeholder="＋ new tag (Enter)"></div>
+        <div class="hint">Tap a tag to add or remove it. Make, rename or delete tags with 🏷️ Edit tags above the list.</div>`;
+    }
+    case "color": return `<div class="row" style="justify-content:flex-start"><input type="color" ${a} value="${esc(v || "#ffffff")}" style="flex:0 0 auto"><span style="flex:0 0 auto">${esc(v || "")}</span></div>`;
+    case "bool": return `<label class="toggle"><input type="checkbox" ${a}${v?" checked":""}> ${v?"Yes":"No"}</label>`;
+    case "mutate": return `<div class="row"><select ${a} data-sub="Name"><option value="">— none —</option>${opts(MUTATIONS, v?.Name)}</select>
+      <input type="number" ${a} data-sub="Chance" step="0.005" min="0" value="${v?.Chance ?? ""}" placeholder="chance"${v?"":" disabled"}></div>
+      ${v ? `<div class="hint">${pct(v.Chance||0)} per plot visit</div>` : ""}`;
+    case "shop": return `<label class="toggle"><input type="checkbox" ${a} data-sub="on"${v?" checked":""}> In the egg shop</label>` + (v ? `<div class="row" style="margin-top:6px">
+      <div><div class="hint">🎲 Chance a shop slot is this egg</div><input type="number" ${a} data-sub="Chance" step="0.005" min="0" max="1" value="${v.Chance}"></div>
+      <div><div class="hint">💰 Price</div><input type="number" ${a} data-sub="Price" step="50" min="0" value="${v.Price}"></div></div>
+      <div class="hint">${pct(v.Chance||0)} of shop slots. All shop eggs together should make 100%.</div>` : "");
+    case "weights": {
+      const w = v || {}, tot = Object.values(w).reduce((x, y) => x + (+y || 0), 0);
+      return `<div class="weights">` + f.options.map(r => `<span class="rn"><span class="dot" style="background:${RAR[r]}"></span>${r}</span>
+        <input type="number" ${a} data-sub="${r}" min="0" step="any" value="${w[r] ?? 0}"><span class="pc">${tot ? pct((+w[r]||0) / tot) : "—"}</span>`).join("") +
+        `</div><div class="bar">${f.options.map(r => `<div style="width:${tot ? (+w[r]||0) / tot * 100 : 0}%;background:${RAR[r]}"></div>`).join("")}</div>
+        <div class="hint">Numbers are weights: they don't have to add up to 100, the % column shows the real chance.</div>`;
+    }
+    case "cost": {
+      const c = v || {};
+      return `<div class="weights">` + Object.entries(RES).map(([r, ic]) => `<span class="rn">${ic} ${r}</span>
+        <input type="number" ${a} data-sub="${r}" min="0" step="1" value="${c[r] ?? 0}"><span class="pc"></span>`).join("") +
+        `</div><div class="hint">0 = not needed. Now: ${esc(costText(c))}</div>`;
+    }
+    case "req": {
+      const same = S.data.skills.filter(s => s.Branch === it.Branch && s.Id !== it.Id);
+      return `<select ${a}><option value="">— none —</option>${same.map(s => `<option value="${esc(s.Id)}"${s.Id===v?" selected":""}>${esc(s.Icon + " " + s.Name)}</option>`).join("")}</select>`;
+    }
+    case "scale": return Object.entries(v || {}).map(([name, sc]) => `<div class="row" style="margin-bottom:6px">
+      <b style="flex:0 0 70px">${esc(name)}</b>
+      <div><div class="hint">start</div><input type="number" ${a} data-sub="${esc(name)}" data-part="Base" step="any" value="${sc.Base}"></div>
+      <div><div class="hint">+ per rank</div><input type="number" ${a} data-sub="${esc(name)}" data-part="Per" step="any" value="${sc.Per}"></div>
+      <div class="hint" style="flex:1.4">${Array.from({length: it.Max}, (_, i) => +scaleVal(sc, i + 1).toFixed(2)).join(" · ")}</div></div>`).join("");
+    case "say": return `<textarea ${a} rows="2">${esc(v)}</textarea><div class="hint">${esc(SAY_HELP)}</div>
+      <div class="preview" id="sayPrev">${Array.from({length: it.Max}, (_, i) => `<b>Rank ${i + 1}:</b> ${esc(sayText(it, i + 1))}`).join("<br>")}</div>`;
+    case "model": {
+      const ms = modelState(T, it);
+      if (T.model === "decor") return `<div style="font-size:15px">${ms ? ms[0] + " " + esc(ms[1]) : ""}</div>`;
+      return `<div class="row" style="justify-content:flex-start;gap:10px;flex-wrap:wrap">
+        <span style="flex:0 0 auto;font-size:15px">${ms ? ms[0] + " " + esc(ms[1]) : ""}</span>
+        <button class="btn blue small" style="flex:0 0 auto" id="upBtn">📤 Upload 3D file</button></div>
+        <div class="hint">.fbx / .obj / .glb. ${it.ModelFile ? `Saved as <b>${esc(S.modelFolder ? S.modelFolder + "\\" + it.ModelFile.replace("/", "\\") : it.ModelFile)}</b>.` : ""}
+        ${T.model === "weapons" ? "Make the long side point up (Y) and use one mesh piece." : "One piece works right away (bouncy animation). Ask Claude to add the face rig (blinking eyes + mouth)."}</div>`;
+    }
+  }
+  return "";
+}
+function wire(T, it){
+  const box = $("detail");
+  for (const el of box.querySelectorAll("[data-f]")) {
+    const f = T.fields[+el.dataset.f], sub = el.dataset.sub;
+    const ev = (el.type === "checkbox" || el.tagName === "SELECT" || el.type === "color") ? "change" : "input";
+    el.addEventListener(ev, () => {
+      let rerender = !!f.rerender;
+      if (f.type === "number") {
+        if (el.value === "" && f.optional) delete it[f.key];
+        else it[f.key] = el.value === "" ? NaN : +el.value;
+      } else if (f.type === "bool") { if (el.checked) it[f.key] = true; else delete it[f.key]; rerender = true; }
+      else if (f.type === "mutate") {
+        if (sub === "Name") { if (el.value) it.Mutate = {Name: el.value, Chance: it.Mutate?.Chance ?? 0.02}; else delete it.Mutate; rerender = true; }
+        else if (it.Mutate) it.Mutate.Chance = +el.value || 0;
+      } else if (f.type === "shop") {
+        if (sub === "on") { if (el.checked) it.Shop = {Chance: 0.05, Price: 2000}; else delete it.Shop; rerender = true; }
+        else it.Shop[sub] = el.value === "" ? NaN : +el.value;
+      } else if (f.type === "weights") {
+        it[f.key] = it[f.key] || {};
+        it[f.key][sub] = +el.value || 0;
+        updateWeights(el, it[f.key], f.options);
+      } else if (f.type === "cost") {
+        // keep the order resources were in; a 0 removes it from the cost
+        const old = it[f.key] || {}, n = el.value === "" ? 0 : +el.value, c = {};
+        for (const r of new Set([...Object.keys(old), sub])) { const x = r === sub ? n : old[r]; if (x !== 0) c[r] = x; }
+        it[f.key] = c;
+        const h = el.closest(".field")?.querySelector(".hint"); if (h) h.textContent = "0 = not needed. Now: " + costText(c);
+      } else if (f.type === "scale") { it.Scale[sub][el.dataset.part] = +el.value || 0; }
+      else if (f.type === "req") { if (el.value) it.Req = el.value; else delete it.Req; }
+      else if (f.type === "id") { const old = it[f.key]; it[f.key] = el.value.trim(); if (S.sel[S.tab] === old) S.sel[S.tab] = it[f.key]; }
+      else if ((f.type === "text" || f.type === "select") && f.optional && el.value.trim() === "") delete it[f.key];
+      else it[f.key] = el.value;
+      if (f.onSet) f.onSet(it);
+      if (f.type === "color" && el.nextElementSibling) el.nextElementSibling.textContent = el.value;
+      if (f.type === "say" || f.type === "scale" || f.key === "Per" || f.key === "Max") {
+        const p = $("sayPrev"); if (p) p.innerHTML = Array.from({length: it.Max || 1}, (_, i) => `<b>Rank ${i + 1}:</b> ${esc(sayText(it, i + 1))}`).join("<br>");
+      }
+      el.classList.toggle("bad", f.type === "number" && el.value === "" && !f.optional);
+      if (rerender) renderDetail();
+      soft();
+    });
+  }
+  for (const c of box.querySelectorAll("[data-tag]")) c.onclick = () => toggleTag(it, c.dataset.tag);
+  const nt = $("newTag");
+  if (nt) nt.onkeydown = e => {
+    if (e.key !== "Enter") return;
+    const name = nt.value.trim();
+    if (!name) return;
+    const all = tagsOf(S.tab);
+    const found = all.find(t => t.toLowerCase() === name.toLowerCase());
+    if (!found) all.push(name);
+    const t = found || name;
+    if (!(it.Tags || []).includes(t)) toggleTag(it, t); else renderDetail();
+    $("newTag")?.focus();
+  };
+  const up = $("upBtn");
+  if (up) up.onclick = () => {
+    const id = it[T.idKey];
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(id || "")) { toast("Give it a proper ID first", true); return; }
+    const fi = $("fileIn"); fi.value = "";
+    fi.onchange = async () => {
+      const file = fi.files[0]; if (!file) return;
+      const ext = file.name.split(".").pop().toLowerCase();
+      if (!["fbx","obj","glb","gltf"].includes(ext)) { toast("Use an .fbx, .obj or .glb file", true); return; }
+      const r = await fetch(`/api/model/${T.model}/${id}.${ext}`, {method: "PUT", body: file});
+      const j = await r.json();
+      if (!r.ok) { toast("❌ " + j.error, true); return; }
+      it.ModelFile = j.file; S.models.add(j.file);
+      toast("📤 Model file saved. Press 💾 Save, then import it in Studio");
+      renderDetail(); soft();
+    };
+    fi.click();
+  };
+}
+// ---------------------------------------------------------------- tags
+function toggleTag(it, t){
+  const all = tagsOf(S.tab);
+  let mine = it.Tags || [];
+  mine = mine.includes(t) ? mine.filter(x => x !== t) : [...mine, t];
+  mine.sort((a, b) => all.indexOf(a) - all.indexOf(b));
+  if (mine.length) it.Tags = mine; else delete it.Tags;
+  renderDetail(); soft();
+}
+function forEachTagged(fn){ for (const it of S.data[S.tab]) if (it.Tags) { fn(it); if (!it.Tags.length) delete it.Tags; } }
+function openTags(){
+  $("tagModal").style.display = "flex";
+  $("tagModalTitle").textContent = `${TABS[S.tab].label} tags`;
+  renderTagRows();
+  $("tagNew").value = "";
+  $("tagNew").focus();
+}
+function renderTagRows(){
+  const all = tagsOf(S.tab);
+  const count = t => S.data[S.tab].filter(it => (it.Tags || []).includes(t)).length;
+  $("tagRows").innerHTML = all.length ? all.map((t, i) => `<div class="trow">
+      <input type="text" maxlength="24" value="${esc(t)}" data-i="${i}">
+      <span class="c">${count(t)} used</span>
+      <button class="btn small" data-up="${i}" title="Move up"${i ? "" : " disabled"}>↑</button>
+      <button class="btn red small" data-del="${i}" title="Delete tag">🗑</button></div>`).join("")
+    : `<div class="hint" style="margin-bottom:8px">No tags yet. Add some below, e.g. Dagger, Sword, Greatsword.</div>`;
+  for (const inp of $("tagRows").querySelectorAll("input")) inp.onchange = () => {
+    const i = +inp.dataset.i, old = all[i], name = inp.value.trim();
+    if (!name || all.some((t, j) => j !== i && t.toLowerCase() === name.toLowerCase())) { toast("That tag name is empty or already used", true); inp.value = old; return; }
+    all[i] = name;
+    forEachTagged(it => { it.Tags = it.Tags.map(t => t === old ? name : t); });
+    if (S.tagFilter.delete(old)) S.tagFilter.add(name);
+    renderTagRows(); soft();
+  };
+  for (const b of $("tagRows").querySelectorAll("[data-up]")) b.onclick = () => {
+    const i = +b.dataset.up; [all[i - 1], all[i]] = [all[i], all[i - 1]];
+    forEachTagged(it => it.Tags.sort((a, c) => all.indexOf(a) - all.indexOf(c)));
+    renderTagRows(); soft();
+  };
+  for (const b of $("tagRows").querySelectorAll("[data-del]")) b.onclick = () => {
+    const i = +b.dataset.del, t = all[i], n = count(t);
+    if (n && !confirm(`Delete the tag “${t}”? It is on ${n} item${n > 1 ? "s" : ""}.`)) return;
+    all.splice(i, 1);
+    forEachTagged(it => { it.Tags = it.Tags.filter(x => x !== t); });
+    S.tagFilter.delete(t);
+    renderTagRows(); soft();
+  };
+}
+function addTagFromModal(){
+  const name = $("tagNew").value.trim(), all = tagsOf(S.tab);
+  if (!name) return;
+  if (all.some(t => t.toLowerCase() === name.toLowerCase())) { toast("That tag already exists", true); return; }
+  all.push(name);
+  $("tagNew").value = "";
+  renderTagRows(); soft();
+  $("tagNew").focus();
+}
+$("tagAdd").onclick = addTagFromModal;
+$("tagNew").onkeydown = e => { if (e.key === "Enter") addTagFromModal(); };
+$("tagClose").onclick = () => { $("tagModal").style.display = "none"; renderAll(); };
+$("tagModal").onclick = e => { if (e.target.id === "tagModal") $("tagClose").onclick(); };
+
+function updateWeights(el, w, options){
+  const tot = Object.values(w).reduce((x, y) => x + (+y || 0), 0);
+  const grid = el.closest(".weights");
+  grid.querySelectorAll(".pc").forEach((pc, i) => pc.textContent = tot ? pct((+w[options[i]]||0) / tot) : "—");
+  const bar = grid.nextElementSibling;
+  bar.querySelectorAll("div").forEach((d, i) => d.style.width = (tot ? (+w[options[i]]||0) / tot * 100 : 0) + "%");
+}
+function renderMsgs(){
+  const E = [...S.errors].sort((a, b) => (a.level > b.level ? 1 : -1) * -1);
+  const errs = E.filter(e => e.level === "e"), warns = E.filter(e => e.level === "w");
+  $("msgs").innerHTML = (errs.length || warns.length ? "" : `<div class="m">🎉 All good!</div>`) +
+    [...errs, ...warns].map((e, i) => `<div class="m ${e.level}" data-i="${i}">${e.level==="e"?"❌":"⚠️"} <span>${esc(e.text)}</span></div>`).join("");
+  const all = [...errs, ...warns];
+  for (const el of $("msgs").querySelectorAll(".m[data-i]")) el.onclick = () => {
+    const e = all[+el.dataset.i]; S.tab = e.tab; if (e.id) S.sel[e.tab] = e.id; renderAll();
+  };
+}
+function renderStudio(){
+  const st = S.studio;
+  if (!st.synced && !st.models) { $("studio").innerHTML = `Not connected yet.<br>1. Open the place in Studio.<br>2. Click <b>CritterSync</b> in the Plugins tab.<br>3. Press <b>⬇ Pull</b>.`; return; }
+  const when = st.at ? new Date(st.at * 1000).toLocaleTimeString() : "?";
+  $("studio").innerHTML = `Last pull: <b>v${st.synced ?? "–"}</b> at ${esc(when)}<br>Editor: <b>v${S.version}</b>${st.synced >= S.version ? " ✅ up to date" : " → press ⬇ Pull in Studio"}<br>` +
+    `Auto-pull: ${st.auto ? "🟢 on" : "⚪ off"}<br>` +
+    (st.place ? `Place: ${esc(st.place)}<br>` : "") +
+    `<div class="hint" style="margin-top:6px">After a pull, playtest, then File → Save to Roblox.</div>`;
+}
+// ---------------------------------------------------------------- studio polling
+async function pollStudio(){
+  try {
+    const j = await (await fetch("/api/studio")).json();
+    const before = JSON.stringify(S.studio);
+    S.studio = j || {};
+    if (JSON.stringify(S.studio) !== before) { soft(); renderDetail(); }
+  } catch {}
+}
+// ---------------------------------------------------------------- boot
+$("saveBtn").onclick = save;
+$("reloadBtn").onclick = () => { if (confirm("Throw away all unsaved changes?")) load(); };
+$("search").oninput = e => { S.filter = e.target.value; renderList(); };
+$("rarFilter").onchange = e => { S.rar = e.target.value; renderList(); };
+window.addEventListener("beforeunload", e => { if (dirtyTabs().length) { e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); } });
+load().then(pollStudio).catch(err => { $("saveChip").className = "chip bad"; $("saveChip").textContent = "❌ Can't reach the helper. Start it with “Start Critter Editor.bat”"; console.error(err); });
+setInterval(pollStudio, 3000);
+</script>
+</body>
+</html>

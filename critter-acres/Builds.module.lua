@@ -315,11 +315,28 @@ function DECOR.Beehive(m)
 	bees.Rate = 4
 	bees.Parent = m:GetChildren()[#m:GetChildren()]
 end
+-- 🧱 placeholder for decorations made in the Critter Editor that have no shape yet: a gift box
+-- (its color comes from the name, so different ones look different). Marked with the attribute Placeholder.
+local PASTEL = {Color3.fromRGB(255, 170, 190), Color3.fromRGB(150, 205, 255), Color3.fromRGB(180, 230, 140),
+	Color3.fromRGB(255, 215, 120), Color3.fromRGB(210, 175, 255)}
+local function placeholder(m, name)
+	local h = 0
+	for i = 1, #name do h += name:byte(i) end
+	local white = Color3.new(1, 1, 1)
+	p(m, {Name = "Box", Size = Vector3.new(2.4, 2.2, 2.4), Position = Vector3.new(0, 1.1, 0), Color = PASTEL[h % #PASTEL + 1], CanCollide = true})
+	p(m, {Size = Vector3.new(2.5, 2.3, 0.45), Position = Vector3.new(0, 1.1, 0), Color = white})
+	p(m, {Size = Vector3.new(0.45, 2.3, 2.5), Position = Vector3.new(0, 1.1, 0), Color = white})
+	for _, s in {-1, 1} do
+		egg(m, {Size = Vector3.new(0.9, 0.55, 0.4), CFrame = CFrame.new(s * 0.4, 2.45, 0) * CFrame.Angles(0, 0, -s * 0.5), Color = white})
+	end
+	ball(m, {Size = Vector3.one * 0.4, Position = Vector3.new(0, 2.4, 0), Color = white})
+	m:SetAttribute("Placeholder", true)
+end
 function Builds.Decor(name)
-	local fn = DECOR[(name or ""):gsub(" ", "")]
-	if not fn then return nil end
+	name = name or ""
+	local fn = DECOR[(name:gsub(" ", ""))]
 	local m = newModel(name)
-	fn(m)
+	if fn then fn(m) else placeholder(m, name) end
 	return m
 end
 

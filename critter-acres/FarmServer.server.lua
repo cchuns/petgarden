@@ -45,7 +45,7 @@ local function today() return math.floor(os.time() / 86400) end
 local root = workspace:WaitForChild("CritterAcres")
 local padsFolder = root:WaitForChild("BuildPads")
 local counter = root:WaitForChild("SellStand"):WaitForChild("Counter")
-local meadow = root:FindFirstChild("Meadow") or root:FindFirstChild("NorthGreen") or root:WaitForChild("FarmGround") -- wild lands are behind the 🌀 Terrain Portal now (Realms)
+local meadow = root:FindFirstChild("Meadow") or root:FindFirstChild("NorthGreen") or root:WaitForChild("FarmGround") -- wild lands are behind the 🌀 Explorer's Portal now (Realms)
 local GROUND_Y = root:GetAttribute("GroundY") or 0
 
 local critterFolder = Instance.new("Folder")
@@ -3540,6 +3540,7 @@ end)
 
 ---------------------------------------------------------------- shared API for the other server scripts (ServerScriptService.CritterAPI)
 API.ACTIONS = ACTIONS
+API.updateEnergy = updateEnergy -- ⚡ raid energy refill (Dungeons pay with it too)
 API.addSeeds = addSeeds
 API.setSeedAttr = setSeedAttr
 API.coinsOf = function(player) return stat(player, "Coins") end
@@ -3685,7 +3686,7 @@ function DEV.GrowCrops(player, prof)
 end
 
 ---------------------------------------------------------------- wild critters wander in (each biome has its own)
--- (only biomes with a ground part in the world; the generated maps behind the Terrain Portal spawn their own in Realms)
+-- (only biomes with a ground part in the world; the generated maps behind the Explorer's Portal spawn their own in Realms)
 for _, b in Data.Biomes do
 	if biomeParts[b.Name] then
 		for _ = 1, 2 do spawnCritter(rollBiomeSpecies(b.Name), nil, nil, {Biome = b.Name}) end

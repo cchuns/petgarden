@@ -40,7 +40,7 @@ local function toggle()
 	on = not on
 	drawChip()
 end
-chip = K.button(gui, {Text = "", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, -140, 1, -152), Size = UDim2.fromOffset(250, 42), Max = 20,
+chip = K.button(gui, {Text = "", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(0.5, -198, 1, -21), Size = UDim2.fromOffset(210, 42), Max = 20,
 	Tip = "🖱️ Mouse look (Ctrl)", TipText = "ON: the camera turns when you move the mouse. Press Ctrl to show the mouse and click things."}, toggle)
 drawChip()
 
