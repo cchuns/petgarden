@@ -1,6 +1,6 @@
 -- 🛠 Critter Editor (critter-acres/editor): the CritterSync plugin writes the editor's JSON into the child
 -- ModuleScript CritterData.GameData. When it is there, it REPLACES weapons, pets, eggs (+ egg shop tiers),
--- capsules, the skill numbers/texts and decorations (cost, icon, effect) above. Everything is built first and only swapped in if it all worked,
+-- capsules, the skill numbers/texts, decorations (cost, icon, effect) and 🛡️ hero gear (pieces, sets + named bonus steps, looks) above. Everything is built first and only swapped in if it all worked,
 -- so a bad file just leaves the Lua tables above in use (with a warning).
 -- Deleted weapons/pets stay in WeaponByName/SpeciesByName (players may own them) but never drop/hatch again.
 function Data.ApplyGameData(json)
@@ -16,6 +16,7 @@ function Data.ApplyGameData(json)
 			assert(Data.WeaponRarityByName[w.Rarity], "weapon " .. w.Name .. ": bad Rarity")
 			w.Fx = col(w.Fx) or Color3.new(1, 1, 1)
 			w.ModelFile = nil
+			if type(w.From) ~= "table" then w.From = nil end -- (none = 🎁 capsules, Data.FixFrom)
 			table.insert(list, w)
 			by[w.Name] = w
 		end
@@ -129,6 +130,59 @@ function Data.ApplyGameData(json)
 		new.Decor, new.DecorByName = list, by
 	end
 
+	-- 🛡️ Hero Gear (editor tabs Gear looks / Gear sets / Hero gear). Ones the files miss stay (players may own them).
+	local MATS = {}
+	for _, m in Enum.Material:GetEnumItems() do MATS[m.Name] = true end
+	local looks, tierIcon = table.clone(Data.HeroLooks), table.clone(Data.HeroTierIcon)
+	if G.herolooks then
+		for _, l in G.herolooks do
+			assert(type(l.Id) == "string" and l.Id:match("^%a%w*$"), "bad gear look id " .. tostring(l.Id))
+			assert(MATS[l.Material or "SmoothPlastic"], "gear look " .. l.Id .. ": unknown material " .. tostring(l.Material))
+			looks[l.Id] = {Color = col(l.Color) or Color3.new(1, 1, 1), Accent = col(l.Accent) or Color3.new(1, 1, 1), Material = l.Material or "SmoothPlastic",
+				Shine = tonumber(l.Shine) or nil, Glow = l.Glow == true or nil, Extra = (l.Extra ~= "" and l.Extra) or nil}
+			if type(l.Icon) == "string" and l.Icon ~= "" then tierIcon[l.Id] = l.Icon end
+		end
+		new.HeroLooks, new.HeroTierIcon = looks, tierIcon
+	end
+	local sets = table.clone(Data.HeroSets)
+	if G.herosets then
+		for _, j in G.herosets do
+			assert(type(j.Id) == "string" and j.Id:match("^%a%w*$"), "bad gear set id " .. tostring(j.Id))
+			local steps = {}
+			for i, st in j.Steps or {} do
+				assert(type(st.Name) == "string" and st.Name ~= "", "gear set " .. j.Id .. ": step " .. i .. " has no name")
+				assert(type(st.Pieces) == "number" and st.Pieces >= 0, "gear set " .. j.Id .. ": step " .. st.Name .. " needs a piece count")
+				table.insert(steps, {Name = st.Name, Pieces = st.Pieces, Weapon = st.Weapon == true or nil, Pwr = tonumber(st.Pwr), HP = tonumber(st.HP),
+					Def = tonumber(st.Def), Spd = tonumber(st.Spd), Glow = st.Glow == true or nil})
+			end
+			local w = (type(j.Weapon) == "string" and j.Weapon ~= "") and j.Weapon or nil
+			assert(not w or (new.WeaponByName or Data.WeaponByName)[w], "gear set " .. j.Id .. ": unknown weapon " .. tostring(w))
+			sets[j.Id] = {Display = j.Display or j.Id, Icon = j.Icon or "🏆", Glow = col(j.Glow) or Color3.new(1, 1, 1), Weapon = w, Steps = steps}
+		end
+		new.HeroSets = sets
+	end
+	if G.herogear then
+		local list, by = {}, {}
+		for name, g in Data.HeroGearByName do by[name] = g end -- (retired pieces still load for owners)
+		for _, g in G.herogear do
+			assert(type(g.Name) == "string" and g.Name:match("^%a%w*$"), "bad gear name " .. tostring(g.Name))
+			assert(Data.HeroSlotById[g.Slot] and g.Slot ~= "MainHand", "gear " .. g.Name .. ": bad slot " .. tostring(g.Slot))
+			assert(Data.WeaponRarityByName[g.Rarity], "gear " .. g.Name .. ": bad rarity")
+			assert(looks[g.Tier], "gear " .. g.Name .. ": unknown look / tier " .. tostring(g.Tier))
+			if g.Set == "" then g.Set = nil end
+			assert(not g.Set or sets[g.Set], "gear " .. g.Name .. ": unknown set " .. tostring(g.Set))
+			if g.Icon == "" then g.Icon = nil end
+			g.Icon = g.Icon or tierIcon[g.Tier] or "🛡️"
+			g.Look = g.Tier
+			if type(g.From) ~= "table" then g.From = nil end -- (Data.FixFrom fills it in; it also sets Craft from it)
+			g.Craft = nil
+			g.Display = g.Display or g.Name
+			table.insert(list, g)
+			by[g.Name] = g
+		end
+		new.HeroGear, new.HeroGearByName = list, by
+	end
+
 	-- everything built: swap it in
 	if new.Decor then Data.Decor, Data.DecorByName = new.Decor, new.DecorByName end
 	if new.Weapons then Data.Weapons, Data.WeaponByName = new.Weapons, new.WeaponByName end
@@ -138,6 +192,15 @@ function Data.ApplyGameData(json)
 		if new.EggTiers then Data.EggShop.Tiers = new.EggTiers end
 	end
 	if new.Capsules then Data.Capsules = new.Capsules end
+	if new.HeroLooks then Data.HeroLooks, Data.HeroTierIcon = new.HeroLooks, new.HeroTierIcon end
+	if new.HeroSets then Data.HeroSets = new.HeroSets end
+	if new.HeroGear then
+		Data.HeroGear, Data.HeroGearByName = new.HeroGear, new.HeroGearByName
+		for _, g in Data.HeroGear do
+			if not table.find(Data.HeroTierOrder, g.Tier) then table.insert(Data.HeroTierOrder, g.Tier) end
+		end
+	end
+	if Data.FixFrom then Data.FixFrom() end -- (🧭 From on every weapon / piece; Craft follows it)
 	if new.Skills then
 		Data.Skills = new.Skills
 		for _, br in Data.SkillBranches do

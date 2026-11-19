@@ -1,0 +1,15 @@
+[
+  {"Id": "Leaf", "Icon": "🌿", "Color": "#6ec355", "Accent": "#be8c5a", "Material": "Grass", "Extra": "Leaf"},
+  {"Id": "Stone", "Icon": "🪨", "Color": "#a5a5af", "Accent": "#78c8ff", "Material": "Slate"},
+  {"Id": "Iron", "Icon": "⚙️", "Color": "#c3c8dc", "Accent": "#f05a5a", "Material": "Metal"},
+  {"Id": "Gold", "Icon": "🟡", "Color": "#ffcd3c", "Accent": "#ff6ea0", "Material": "Metal", "Shine": 0.3, "Extra": "Gem"},
+  {"Id": "Crystal", "Icon": "💎", "Color": "#aa82ff", "Accent": "#8cf0ff", "Material": "Glass", "Glow": true, "Extra": "Gem"},
+  {"Id": "Magma", "Icon": "🔥", "Color": "#5f4b55", "Accent": "#ff7828", "Material": "Basalt", "Glow": true, "Extra": "Flame"},
+  {"Id": "Bunny", "Color": "#ffafd2", "Accent": "#ffffff", "Material": "Fabric", "Extra": "Ears"},
+  {"Id": "Candy", "Color": "#ff82b4", "Accent": "#96f0c8", "Material": "SmoothPlastic"},
+  {"Id": "Slime", "Icon": "🟢", "Color": "#78eb6e", "Accent": "#d2ffbe", "Material": "Glass", "Extra": "Gem"},
+  {"Id": "Root", "Icon": "🌳", "Color": "#7d5a3c", "Accent": "#78cd55", "Material": "Wood", "Extra": "Leaf"},
+  {"Id": "Frost", "Icon": "❄️", "Color": "#c8ebff", "Accent": "#6eb4ff", "Material": "Ice", "Shine": 0.15, "Extra": "Gem"},
+  {"Id": "Amethyst", "Icon": "🟣", "Color": "#a569e6", "Accent": "#ffcd5a", "Material": "Glass", "Glow": true, "Extra": "Gem"},
+  {"Id": "Dragon", "Icon": "🐉", "Color": "#cd3c37", "Accent": "#ffc83c", "Material": "Metal", "Shine": 0.15, "Glow": true, "Extra": "Flame"}
+]

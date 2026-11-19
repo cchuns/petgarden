@@ -1197,6 +1197,12 @@ Data.Weapons = {
 	{Name = "ToyBow", Display = "Toy Bow", Icon = "🏹", Rarity = "Epic", Style = "Range", Dmg = 58, Cd = 0.55, Range = 46, Fx = Color3.fromRGB(255, 150, 190)},
 	{Name = "SunBow", Display = "Sun Bow", Icon = "🌅", Rarity = "Legendary", Style = "Range", Dmg = 128, Cd = 0.5, Range = 48, Fx = Color3.fromRGB(255, 200, 70)},
 	{Name = "RainbowBow", Display = "Rainbow Bow", Icon = "🌈", Rarity = "Mythic", Style = "Range", Dmg = 275, Cd = 0.45, Range = 50, Fx = Color3.fromRGB(150, 210, 255)},
+	-- 🏰 dungeon set weapons: From = {} (never in capsules); only their own dungeon boss drops them
+	{Name = "SlimeSword", Display = "Slime Sword", Icon = "🟢", Rarity = "Epic", Style = "Melee", Dmg = 66, Cd = 0.5, Range = 10, Fx = Color3.fromRGB(120, 235, 110), From = {}},
+	{Name = "RootStaff", Display = "Root Staff", Icon = "🌳", Rarity = "Epic", Style = "Magic", Dmg = 60, Cd = 0.55, Range = 42, Fx = Color3.fromRGB(140, 205, 85), From = {}},
+	{Name = "FrostBow", Display = "Frost Bow", Icon = "❄️", Rarity = "Legendary", Style = "Range", Dmg = 130, Cd = 0.5, Range = 48, Fx = Color3.fromRGB(160, 220, 255), From = {}},
+	{Name = "AmethystWand", Display = "Amethyst Wand", Icon = "🟣", Rarity = "Legendary", Style = "Magic", Dmg = 125, Cd = 0.5, Range = 44, Fx = Color3.fromRGB(200, 140, 255), From = {}},
+	{Name = "DragonBlade", Display = "Dragon Blade", Icon = "🐉", Rarity = "Mythic", Style = "Melee", Dmg = 310, Cd = 0.45, Range = 11, Fx = Color3.fromRGB(255, 120, 64), From = {}},
 }
 Data.WeaponByName = {}
 for _, w in Data.Weapons do Data.WeaponByName[w.Name] = w end

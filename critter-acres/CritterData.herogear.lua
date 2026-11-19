@@ -52,7 +52,30 @@ Data.HeroGearDrop = {
 	Dungeon = 1, -- dungeon bosses always drop one
 	Lands = {Meadow = {"Gold"}, Forest = {"Gold"}, Peaks = {"Gold", "Crystal"}, Caves = {"Crystal"}, Volcano = {"Crystal", "Magma"}},
 	DungeonSet = {Meadow = "Slime", Forest = "Root", Peaks = "Frost", Caves = "Amethyst", Volcano = "Dragon"}, -- 🏰 each dungeon boss's own set
+	SetWeapon = 0.25, -- 🏰 chance a dungeon boss ALSO drops its set's weapon (Data.HeroSets[set].Weapon)
 }
+-- 🧭 where things come from (the editor's ✔ boxes, field From):
+--   weapons: "Capsules" / "Lands" (land bosses in the exploration maps) / "Dungeons" (dungeon bosses)
+--   hero gear: "Craft" (🔨 Workbench) / "Lands" / "Dungeons". A set's weapon ALSO drops from its own dungeon boss (SetWeapon above).
+Data.WeaponDrop = {Lands = 0.1, Dungeons = 0.2} -- chance a boss also drops one of the weapons marked for there
+function Data.FromHas(def, src)
+	for _, s in def and def.From or {} do
+		if s == src then return true end
+	end
+	return false
+end
+-- fill in From for anything that has none (old data): weapons = capsules (Boss = true: nowhere), gear = Craft / its dungeon / lands
+function Data.FixFrom()
+	for _, w in Data.WeaponByName do
+		if type(w.From) ~= "table" then w.From = w.Boss and {} or {"Capsules"} end
+	end
+	local own = {}
+	for _, set in Data.HeroGearDrop.DungeonSet or {} do own[set] = true end
+	for _, g in Data.HeroGearByName do
+		if type(g.From) ~= "table" then g.From = g.Craft and {"Craft"} or ((g.Set and own[g.Set]) and {"Dungeons"} or {"Lands"}) end
+		g.Craft = Data.FromHas(g, "Craft") or nil
+	end
+end
 -- 🎨 looks: colors / material for the part-built pieces on your character (HeroGear.server builds them)
 --   Extra = a little touch: "Leaf" (leaf on top), "Gem" (a shiny gem), "Ears" (bunny ears), "Flame" (glowy embers)
 Data.HeroLooks = {
@@ -150,18 +173,64 @@ for _, g in Data.HeroGear do
 	g.Look = g.Look or g.Tier
 	Data.HeroGearByName[g.Name] = g
 end
--- 🏆 boss sets: wear 2 / 4 pieces of one set for a bonus. Pwr = +% power, HP = +% max HP. 4 pieces = a glow too.
+-- 🏆 boss sets. Each set has named bonus STEPS (all the steps you reach add up):
+--   Pieces = how many armor pieces of the set you wear; Weapon = true: you also need the set's weapon in your hand.
+--   Pwr = +% power, HP = +% max HP, Def = % less hurt, Spd = % walk speed (lands), Glow = true: the set's sparkle + light.
+-- Weapon = the set's own weapon (a Data.Weapons Name). Its own dungeon boss drops it (HeroGearDrop.SetWeapon); give it From = {} to keep it out of capsules.
 Data.HeroSets = {
-	Gold = {Display = "Golden Set", Icon = "🟡", Glow = Color3.fromRGB(255, 215, 90), [2] = {Pwr = 0.05}, [4] = {Pwr = 0.1, HP = 0.1}},
-	Crystal = {Display = "Crystal Set", Icon = "💎", Glow = Color3.fromRGB(170, 140, 255), [2] = {Pwr = 0.08}, [4] = {Pwr = 0.15, HP = 0.15}},
-	Magma = {Display = "Magma Set", Icon = "🔥", Glow = Color3.fromRGB(255, 130, 50), [2] = {Pwr = 0.1}, [4] = {Pwr = 0.2, HP = 0.2}},
-	-- 🏰 dungeon boss sets
-	Slime = {Display = "Slime Set", Icon = "🟢", Glow = Color3.fromRGB(140, 255, 120), [2] = {Pwr = 0.06}, [4] = {Pwr = 0.12, HP = 0.1}},
-	Root = {Display = "Root Set", Icon = "🌳", Glow = Color3.fromRGB(150, 230, 90), [2] = {Pwr = 0.06}, [4] = {Pwr = 0.12, HP = 0.12}},
-	Frost = {Display = "Frost Set", Icon = "❄️", Glow = Color3.fromRGB(160, 220, 255), [2] = {Pwr = 0.09}, [4] = {Pwr = 0.16, HP = 0.15}},
-	Amethyst = {Display = "Amethyst Set", Icon = "🟣", Glow = Color3.fromRGB(200, 140, 255), [2] = {Pwr = 0.09}, [4] = {Pwr = 0.17, HP = 0.15}},
-	Dragon = {Display = "Dragon Set", Icon = "🐉", Glow = Color3.fromRGB(255, 120, 60), [2] = {Pwr = 0.12}, [4] = {Pwr = 0.22, HP = 0.22}},
+	Gold = {Display = "Golden Set", Icon = "🟡", Glow = Color3.fromRGB(255, 215, 90), Steps = {
+		{Name = "Golden Shine", Pieces = 2, Pwr = 0.05},
+		{Name = "Golden Glory", Pieces = 4, Pwr = 0.1, HP = 0.1, Glow = true},
+	}},
+	Crystal = {Display = "Crystal Set", Icon = "💎", Glow = Color3.fromRGB(170, 140, 255), Steps = {
+		{Name = "Crystal Spark", Pieces = 2, Pwr = 0.08},
+		{Name = "Crystal Heart", Pieces = 4, Pwr = 0.15, HP = 0.15, Glow = true},
+	}},
+	Magma = {Display = "Magma Set", Icon = "🔥", Glow = Color3.fromRGB(255, 130, 50), Steps = {
+		{Name = "Magma Heat", Pieces = 2, Pwr = 0.1},
+		{Name = "Magma Core", Pieces = 4, Pwr = 0.2, HP = 0.2, Glow = true},
+	}},
+	-- 🏰 dungeon boss sets (armor + their own weapon)
+	Slime = {Display = "Slime Set", Icon = "🟢", Glow = Color3.fromRGB(140, 255, 120), Weapon = "SlimeSword", Steps = {
+		{Name = "Slimy Armor", Pieces = 2, Pwr = 0.06},
+		{Name = "Slime Body", Pieces = 4, Pwr = 0.12, HP = 0.1, Glow = true},
+		{Name = "Slime Splash", Pieces = 2, Weapon = true, Pwr = 0.1},
+	}},
+	Root = {Display = "Root Set", Icon = "🌳", Glow = Color3.fromRGB(150, 230, 90), Weapon = "RootStaff", Steps = {
+		{Name = "Bark Skin", Pieces = 2, Pwr = 0.06},
+		{Name = "Old Roots", Pieces = 4, Pwr = 0.12, HP = 0.12, Glow = true},
+		{Name = "Root Power", Pieces = 2, Weapon = true, Pwr = 0.1},
+	}},
+	Frost = {Display = "Frost Set", Icon = "❄️", Glow = Color3.fromRGB(160, 220, 255), Weapon = "FrostBow", Steps = {
+		{Name = "Frost Guard", Pieces = 2, Pwr = 0.09},
+		{Name = "Frozen Heart", Pieces = 4, Pwr = 0.16, HP = 0.15, Glow = true},
+		{Name = "Frost Bite", Pieces = 2, Weapon = true, Pwr = 0.14},
+	}},
+	Amethyst = {Display = "Amethyst Set", Icon = "🟣", Glow = Color3.fromRGB(200, 140, 255), Weapon = "AmethystWand", Steps = {
+		{Name = "Gem Glow", Pieces = 2, Pwr = 0.09},
+		{Name = "Amethyst Heart", Pieces = 4, Pwr = 0.17, HP = 0.15, Glow = true},
+		{Name = "Gem Storm", Pieces = 2, Weapon = true, Pwr = 0.14},
+	}},
+	Dragon = {Display = "Dragon Set", Icon = "🐉", Glow = Color3.fromRGB(255, 120, 60), Weapon = "DragonBlade", Steps = {
+		{Name = "Dragon Scales", Pieces = 2, Pwr = 0.12},
+		{Name = "Dragon Heart", Pieces = 4, Pwr = 0.22, HP = 0.22, Glow = true},
+		{Name = "Dragon Fire", Pieces = 2, Weapon = true, Pwr = 0.2},
+	}},
 }
+-- the set whose weapon this is (nil = not a set weapon)
+function Data.HeroSetOfWeapon(name)
+	for id, sd in Data.HeroSets do
+		if sd.Weapon == name then return id end
+	end
+end
+-- short text for one bonus step: "⚡+6% ❤️+10% ✨"
+function Data.HeroStepText(step)
+	local t = {}
+	local function add(icon, v) if (v or 0) > 0 then table.insert(t, ("%s+%d%%"):format(icon, math.floor(v * 100 + 0.5))) end end
+	add("⚡", step.Pwr) add("❤️", step.HP) add("🛡️", step.Def) add("👟", step.Spd)
+	if step.Glow then table.insert(t, "✨ glow") end
+	return table.concat(t, " ")
+end
 -- what one piece gives: {Pwr = flat ⚡, HP = %, Def = %, Spd = %}
 function Data.HeroGearStats(g)
 	local def = g and Data.HeroGearByName[g.Name]
@@ -188,4 +257,5 @@ Data.HeroCosmetics = {
 }
 Data.HeroCosmeticByName = {}
 for _, c in Data.HeroCosmetics do Data.HeroCosmeticByName[c.Name] = c end
+Data.FixFrom() -- (after the editor's GameData too: ApplyGameData calls it again)
 

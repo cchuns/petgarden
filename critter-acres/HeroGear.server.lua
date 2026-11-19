@@ -64,16 +64,25 @@ local function calc(prof)
 			end
 		end
 	end
+	-- 🏆 set bonuses: every named step you reach adds up. A Weapon step also needs the set's weapon in your hand.
+	local held
+	for _, w in prof.Weapons or {} do
+		if w.Id == prof.WeaponOn then held = w.Name end
+	end
+	local heldSet = held and Data.HeroSetOfWeapon and Data.HeroSetOfWeapon(held)
+	if heldSet then st.Sets[heldSet] = st.Sets[heldSet] or 0 end -- (a weapon step can need 0 armor pieces)
+	st.Steps, st.HeldSet = {}, heldSet
 	for set, n in st.Sets do
 		local sd = Data.HeroSets[set]
-		if sd then
-			for _, need in {2, 4} do
-				if n >= need and sd[need] then
-					st.PwrPct += sd[need].Pwr or 0
-					st.HP += sd[need].HP or 0
-				end
+		for _, step in sd and sd.Steps or {} do
+			if n >= (step.Pieces or 0) and (not step.Weapon or heldSet == set) then
+				st.PwrPct += step.Pwr or 0
+				st.HP += step.HP or 0
+				st.Def += step.Def or 0
+				st.Spd += step.Spd or 0
+				if step.Glow then st.Glow = sd.Glow end
+				st.Steps[set .. "|" .. step.Name] = true
 			end
-			if n >= 4 then st.Glow = sd.Glow end
 		end
 	end
 	st.Def = math.min(Data.HeroDefCap, st.Def)
@@ -400,19 +409,41 @@ local function give(player, name)
 	return res
 end
 API.giveHeroGear = give
+API.heroGearRefresh = refresh -- (Combat: the weapon in your hand changed, a set's weapon step may turn on / off)
+-- 🏰 a dungeon boss may also drop its set's weapon (nil = not this time)
+API.heroSetWeaponDrop = function(land)
+	local set = Data.HeroGearDrop.DungeonSet and Data.HeroGearDrop.DungeonSet[land]
+	local sd = set and Data.HeroSets[set]
+	if not sd or not sd.Weapon or not Data.WeaponByName[sd.Weapon] then return nil end
+	if math.random() >= (Data.HeroGearDrop.SetWeapon or 0) then return nil end
+	return sd.Weapon
+end
 
 -- 🏆 a boss went down: maybe a boss-tier piece (nil = nothing this time)
 API.heroGearDrop = function(land, dungeon)
 	local chance = dungeon and Data.HeroGearDrop.Dungeon or Data.HeroGearDrop.Boss
 	if math.random() >= chance then return nil end
-	local tiers = Data.HeroGearDrop.Lands[land] or Data.HeroGearDrop.Lands.Meadow
-	local tier = tiers[math.random(#tiers)]
-	-- 🏰 a dungeon boss drops a piece of that dungeon's own set
-	local own = dungeon and Data.HeroGearDrop.DungeonSet and Data.HeroGearDrop.DungeonSet[land]
-	if own then tier = own end
-	local pool = {}
+	local src = dungeon and "Dungeons" or "Lands"
+	-- 🧭 pieces ticked for there: a dungeon boss prefers its own set, a land boss the tiers of its land
+	local want = {}
+	if dungeon then
+		local own = Data.HeroGearDrop.DungeonSet and Data.HeroGearDrop.DungeonSet[land]
+		local pool = {}
+		for _, def in Data.HeroGear do
+			if def.Set == own and Data.FromHas(def, src) then table.insert(pool, def.Name) end
+		end
+		if #pool > 0 then return pool[math.random(#pool)] end
+	else
+		for _, t in Data.HeroGearDrop.Lands[land] or Data.HeroGearDrop.Lands.Meadow do want[t] = true end
+		local pool = {}
+		for _, def in Data.HeroGear do
+			if want[def.Tier] and Data.FromHas(def, src) then table.insert(pool, def.Name) end
+		end
+		if #pool > 0 then return pool[math.random(#pool)] end
+	end
+	local pool = {} -- (nothing matched: any piece ticked for there)
 	for _, def in Data.HeroGear do
-		if def.Tier == tier and not def.Craft then table.insert(pool, def.Name) end
+		if Data.FromHas(def, src) then table.insert(pool, def.Name) end
 	end
 	return #pool > 0 and pool[math.random(#pool)] or nil
 end
@@ -447,7 +478,15 @@ local function info(player, prof)
 	end
 	local st = API.heroGearStats(player)
 	local sets = {}
-	for set, n in st.Sets or {} do table.insert(sets, {Set = set, N = n}) end
+	for set, n in st.Sets or {} do
+		local sd = Data.HeroSets[set]
+		local steps = {}
+		for _, step in sd and sd.Steps or {} do
+			table.insert(steps, {Name = step.Name, Pieces = step.Pieces or 0, Weapon = step.Weapon, Text = Data.HeroStepText(step),
+				On = st.Steps and st.Steps[set .. "|" .. step.Name] or false})
+		end
+		table.insert(sets, {Set = set, N = n, Holding = st.HeldSet == set, Steps = steps})
+	end
 	local weapon, weapons = nil, {}
 	for _, w in prof.Weapons or {} do
 		local one = {Id = w.Id, Name = w.Name, Stars = w.Stars or 0, Shiny = w.Shiny, Power = Data.WeaponPower(w)}

@@ -406,5 +406,10 @@
     "Cd": 0.45,
     "Range": 50,
     "Fx": "#96d2ff"
-  }
+  },
+  {"Name": "SlimeSword", "Display": "Slime Sword", "Icon": "🟢", "Rarity": "Epic", "Style": "Melee", "Dmg": 66, "Cd": 0.5, "Range": 10, "Fx": "#78eb6e", "From": []},
+  {"Name": "RootStaff", "Display": "Root Staff", "Icon": "🌳", "Rarity": "Epic", "Style": "Magic", "Dmg": 60, "Cd": 0.55, "Range": 42, "Fx": "#8ccd55", "From": []},
+  {"Name": "FrostBow", "Display": "Frost Bow", "Icon": "❄️", "Rarity": "Legendary", "Style": "Range", "Dmg": 130, "Cd": 0.5, "Range": 48, "Fx": "#a0dcff", "From": []},
+  {"Name": "AmethystWand", "Display": "Amethyst Wand", "Icon": "🟣", "Rarity": "Legendary", "Style": "Magic", "Dmg": 125, "Cd": 0.5, "Range": 44, "Fx": "#c88cff", "From": []},
+  {"Name": "DragonBlade", "Display": "Dragon Blade", "Icon": "🐉", "Rarity": "Mythic", "Style": "Melee", "Dmg": 310, "Cd": 0.45, "Range": 11, "Fx": "#ff7840", "From": []}
 ]

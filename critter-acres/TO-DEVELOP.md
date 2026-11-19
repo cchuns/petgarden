@@ -142,6 +142,8 @@ Ideas to build next, roughly in priority order. Tick them off as they ship.
 - [x] 6 slots: head, body, legs, boots, main hand (weapon), off hand. Crafted low tiers, boss-only high tiers. Gear shows on the character; a cosmetic look overrides it.
 - [ ] CK playtests: crafting, wearing, the look on the avatar, PWR/HP changes, boss drops
 - [ ] 👗 Cosmetics shop (sell looks later; only 2 sample looks now, given by the dev menu)
-- [ ] Critter Editor tab for Hero Gear (pieces, looks, sets, numbers)
+- [x] Critter Editor tabs for Hero Gear: pieces, looks, sets with named bonus steps + set weapon, 🧭 where-from checklist (2026-11-19)
+- [ ] Editor: slot bonus numbers, craft costs, drop chances, dungeon numbers + scroll lists
+- [ ] 3D models for the 5 set weapons (Slime Sword, Root Staff, Frost Bow, Amethyst Wand, Dragon Blade)
 - [x] Dungeon stage 3: each dungeon boss gets its OWN set (Slime / Root / Frost / Amethyst / Dragon)
 - [ ] Maybe: off-hand variety (orbs / books for mages), a "hide helmet" toggle, 3D previews on the gear cards

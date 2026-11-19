@@ -917,3 +917,22 @@ Pushed by line splice (Studio's old copies differed from local only by these cha
   CraftServer 15277/251780, CritterWorld 65705/272270, CritterMenus 61500/6923, DevMenu 12991/84778, CritterData 121821/530159 (loads; GameData still applies).
 - **Next:** build real shapes for the 15 🧱 scroll decorations (ARTSTYLE.md); maybe show best ⭐ per dungeon in the Dungeon Portal picker; then stage 4.
 
+## ✨ Named set bonuses + set weapons + 🧭 "where from" + editor Hero Gear tabs (2026-11-19, IN STUDIO, verified; NOT playtested)
+- **Set bonuses are named steps** (`Data.HeroSets[id].Steps = {{Name, Pieces, Weapon?, Pwr, HP, Def, Spd, Glow?}}`, all reached steps add up).
+  `Weapon = true` steps also need the set's weapon in hand (`HeroSets[id].Weapon` = a weapon Name). Old `[2]/[4]` tables are gone.
+  HeroGear.server `calc` reads the held weapon (prof.WeaponOn); Combat `giveTool` defers `API.heroGearRefresh` so weapon swaps update it.
+  GearInfo `Sets` = {Set, N, Holding, Steps{Name, Pieces, Weapon, Text, On}}. Helpers: `Data.HeroSetOfWeapon(name)`, `Data.HeroStepText(step)`.
+- **Set weapons** (Lua Data.Weapons + weapons.json, `From = {}`): SlimeSword, RootStaff, FrostBow, AmethystWand, DragonBlade (no 3D models yet:
+  glowing stick). A dungeon boss drops its set's weapon with `HeroGearDrop.SetWeapon` 0.25 (`API.heroSetWeaponDrop`, Combat gift Type "Weapon").
+- **🧭 Where from** (field `From`): weapons {"Capsules","Lands","Dungeons"}, hero gear {"Craft","Lands","Dungeons"}. `Data.FromHas(def, src)`;
+  `Data.FixFrom()` fills old data (weapons → Capsules, gear → Craft / its dungeon / Lands) and sets gear `Craft` from From; it runs at the end of
+  the hero gear block AND at the end of ApplyGameData. Capsules roll only "Capsules" weapons; bosses also drop a weapon ticked for their place with
+  `Data.WeaponDrop` {Lands 0.1, Dungeons 0.2}; gear boss drops (`API.heroGearDrop`) use "Lands" (land's tiers) / "Dungeons" (own set first).
+- **Gear window:** new window tab "✨ Set bonuses" (each set you own something of: header with wearing count + set weapon state, ✅/🔒 rows per step).
+- **Critter Editor:** 3 new tabs 🛡️ Hero gear (herogear.json), ✨ Gear sets (herosets.json: steps table editor, set weapon, member list),
+  🎨 Gear looks (herolooks.json); ⚔️ Weapons + 🛡️ Hero gear have a 🧭 "Where players get it" checklist. CritterEditor.ps1 `$names` now serves them
+  (**restart the helper window**). ApplyGameData (Studio hook + editor/CritterData.apply.lua) loads G.herolooks / G.herosets / G.herogear with checks.
+  Installed plugin updated (pull summary lists the new tabs). A test pull of the full bundle on a CritterData clone loaded fine (37 weapons, 66 gear, 8 sets).
+- **Checksums (Studio = local):** HeroGear.server 29748/418064, HeroGear.client 21846/777170, Combat 54108/439038, CritterData 130020/191104.
+- **Next:** 3D models for the 5 set weapons; maybe slot bonus numbers / craft costs / dungeon numbers in the editor; scroll decoration shapes.
+

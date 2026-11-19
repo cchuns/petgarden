@@ -12,7 +12,7 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $dataDir = Join-Path $root 'data'
 $histDir = Join-Path $dataDir 'history'
 $modelDir = Join-Path $root 'models'
-$names = @('weapons', 'pets', 'eggs', 'capsules', 'skills', 'decor', 'tags')
+$names = @('weapons', 'pets', 'eggs', 'capsules', 'skills', 'decor', 'tags', 'herogear', 'herosets', 'herolooks')
 $port = 34880
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 foreach ($d in @($dataDir, $histDir, $modelDir, (Join-Path $modelDir 'weapons'), (Join-Path $modelDir 'pets'))) {

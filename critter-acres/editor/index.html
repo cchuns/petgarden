@@ -55,6 +55,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .item.err{box-shadow:inset 0 0 0 2px var(--red)}
 /* form */
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.steps{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.steprow{display:grid;grid-template-columns:2.2fr 1.4fr .8fr .8fr .8fr .8fr .8fr .55fr auto;gap:6px;align-items:center}
+.steprow.head{font-size:12px;color:var(--soft);font-weight:600}
+.steprow input,.steprow select{min-width:0;width:100%}
 .field{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:8px 10px}
 .field.wide{grid-column:1/-1}
 .field label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
@@ -167,12 +171,21 @@ const MUTATIONS = ["Juicy","Golden","Frosty","Starry","Zapped","Prismatic"];
 const RES = {Coins:"💰",Fiber:"🌾",Stone:"🪨",Wood:"🪵",Mushroom:"🍄",Ice:"🧊",Iron:"⚙️",Gold:"🟡",Gem:"💎",Magma:"🔥",Obsidian:"⬛"}; // = Data.Resources
 const costText = c => Object.entries(c || {}).map(([r, n]) => `${RES[r] || r}${n}`).join(" ") || "free";
 const EFFECTS = {"":"— just pretty —",Water:"💦 Waters plots nearby",Grow:"🐝 Plots nearby grow faster"};
+const HERO_SLOTS = {Head:"🪖 Head",Body:"👕 Body",Cape:"🦸 Cape",Legs:"👖 Legs",Boots:"👢 Boots",OffHand:"🤚 Off hand"}; // = Data.HeroSlots (MainHand = weapons)
+const EXTRAS = {"":"— none —",Leaf:"🍃 A leaf",Gem:"💎 A shiny gem",Ears:"🐰 Bunny ears",Flame:"🔥 Glowy embers"};
+const MATERIALS = ["SmoothPlastic","Plastic","Glass","Neon","Metal","Foil","DiamondPlate","Wood","WoodPlanks","Grass","LeafyGrass","Fabric","Leather","Ice","Glacier","Snow",
+  "Slate","Basalt","Rock","Marble","Granite","Sandstone","Sand","Pebble","Cobblestone","Brick","Concrete","CrackedLava","Salt","Mud","Ground","Limestone","Plaster","Rubber","ForceField"];
+const WEAPON_FROM = {Capsules:"🎁 Capsules",Lands:"🌀 Land bosses (exploration maps)",Dungeons:"🏰 Dungeon bosses"};
+const GEAR_FROM = {Craft:"🔨 Workbench (Leaf / Stone / Iron)",Lands:"🌀 Land bosses (exploration maps)",Dungeons:"🏰 Dungeon bosses"};
+const fromOf = (it, tab) => Array.isArray(it.From) ? it.From : (tab === "weapons" ? (it.Boss ? [] : ["Capsules"]) : []);
+const setWeaponOf = name => (S.data.herosets||[]).find(x => x.Weapon === name);
+const pctTxt = st => [["⚡",st.Pwr],["❤️",st.HP],["🛡️",st.Def],["👟",st.Spd]].filter(([,v]) => v > 0).map(([i,v]) => `${i}+${Math.round(v*100)}%`).join(" ") + (st.Glow ? " ✨" : "");
 const SAY_HELP = "Words in {curly brackets} turn into numbers for each rank: {Per%} = Per × rank as %, {Dmg%}, {Stun.1} (1 decimal), {Secs}, {r} = rank, {Per%+100} adds 100.";
 // ---------------------------------------------------------------- tabs
 const TABS = {
   weapons:{icon:"⚔️",label:"Weapons",idKey:"Name",canAdd:true,canDelete:true,model:"weapons",rarities:WEAPON_RAR,tags:true,
-    title:it=>it.Display||it.Name, sub:it=>`${STYLES[it.Style]?.split(" ")[0]||"?"} ${it.Style} · 💥 ${it.Dmg}`,
-    blank:()=>({Name:"",Display:"New Weapon",Icon:"⚔️",Rarity:"Common",Style:"Melee",Dmg:15,Cd:0.5,Range:9,Fx:"#ffcc66"}),
+    title:it=>it.Display||it.Name, sub:it=>`${STYLES[it.Style]?.split(" ")[0]||"?"} ${it.Style} · 💥 ${it.Dmg} · ${fromOf(it,"weapons").map(f=>WEAPON_FROM[f]?.split(" ")[0]).join("")||(setWeaponOf(it.Name)?"✨ set":"—")}`,
+    blank:()=>({Name:"",Display:"New Weapon",Icon:"⚔️",Rarity:"Common",Style:"Melee",Dmg:15,Cd:0.5,Range:9,Fx:"#ffcc66",From:["Capsules"]}),
     fields:[
       {key:"Name",label:"🆔 ID (code name)",type:"id",hint:"Letters and numbers, no spaces. The 3D model in Studio has this name."},
       {key:"Display",label:"🏷️ Name players see",type:"text"},
@@ -184,6 +197,8 @@ const TABS = {
       {key:"Cd",label:"⏱️ Seconds between attacks",type:"number",min:0.1,step:0.05},
       {key:"Range",label:"📏 Reach (studs)",type:"number",min:1,step:1,hint:"Melee ≈ 9–11, Magic ≈ 34–46, Range ≈ 42–50."},
       {key:"Fx",label:"🎨 Effect color",type:"color"},
+      {key:"From",label:"🧭 Where players get it",type:"from",options:WEAPON_FROM,wide:true,
+        hint:"Tick every place it can come from. A set's weapon (✨ Gear sets) also drops from its own dungeon boss, even with nothing ticked."},
       {key:"ModelFile",label:"🧊 3D model",type:"model",wide:true},
     ]},
   pets:{icon:"🐾",label:"Pets",idKey:"Species",canAdd:true,canDelete:true,model:"pets",rarities:PET_RAR,tags:true,
@@ -267,6 +282,49 @@ const TABS = {
       {key:"R",label:"⭕ Circle size (studs)",type:"number",optional:true,min:1,step:1,showIf:it=>it.R!==undefined},
       {key:"Scale",label:"📈 Numbers per rank (start + per rank)",type:"scale",wide:true,showIf:it=>it.Scale},
       {key:"Say",label:"💬 Text players see",type:"say",wide:true},
+    ]},
+  herogear:{icon:"🛡️",label:"Hero gear",idKey:"Name",canAdd:true,canDelete:true,rarities:WEAPON_RAR,group:"Tier",
+    title:it=>it.Display||it.Name, sub:it=>`${HERO_SLOTS[it.Slot]||"?"} · ${it.Tier}${it.Set?" · ✨ "+it.Set:""} · ${fromOf(it,"herogear").map(f=>GEAR_FROM[f]?.split(" ")[0]).join("")||"—"}`,
+    blank:()=>({Name:"",Display:"New Gear",Slot:"Head",Tier:"Leaf",Rarity:"Common",From:["Lands"]}),
+    note:"🛡️ What players WEAR (weapons are in ⚔️ Weapons). Its look and colors come from its 🎨 Gear look. 🔨 Crafted pieces are made at the Workbench (Leaf / Stone / Iron have costs); the rest only drop from bosses.",
+    fields:[
+      {key:"Name",label:"🆔 ID (code name)",type:"id",hint:"Letters and numbers, no spaces. It's saved in players' bags, so it can't change once it's in the game."},
+      {key:"Display",label:"🏷️ Name players see",type:"text"},
+      {key:"Icon",label:"😀 Icon",type:"emoji",optional:true,hint:"Leave empty to use the 🎨 look's icon."},
+      {key:"Slot",label:"🧍 Slot",type:"select",options:HERO_SLOTS},
+      {key:"Tier",label:"🎨 Look (tier)",type:"select",options:()=>(S.data.herolooks||[]).map(l=>l.Id),hint:"Colors + material on the player. Also the tier: Leaf / Stone / Iron can be crafted, land bosses drop Gold / Crystal / Magma."},
+      {key:"Rarity",label:"💎 Rarity",type:"select",options:WEAPON_RAR,hint:"Sets the ⚡ power and slot bonus (higher = stronger)."},
+      {key:"Set",label:"✨ Part of set",type:"select",optional:true,options:()=>({"":"— no set —",...Object.fromEntries((S.data.herosets||[]).map(x=>[x.Id,`${x.Icon} ${x.Display}`]))})},
+      {key:"From",label:"🧭 Where players get it",type:"from",options:GEAR_FROM,wide:true,
+        hint:"🔨 needs a Leaf / Stone / Iron look (they have costs). Land bosses drop pieces of their land's tiers; a dungeon boss prefers its own set."},
+    ]},
+  herosets:{icon:"✨",label:"Gear sets",idKey:"Id",canAdd:true,canDelete:false,rarities:null,
+    title:it=>`${it.Display||it.Id}`, sub:it=>`${(it.Steps||[]).length} bonus steps${it.Weapon?" · ⚔️ "+it.Weapon:""} · ${(S.data.herogear||[]).filter(g=>g.Set===it.Id).length} pieces`,
+    blank:()=>({Id:"",Display:"New Set",Icon:"🏆",Glow:"#ffd75a",Weapon:"",Steps:[{Name:"New Bonus",Pieces:2,Pwr:0.05}]}),
+    note:"✨ Wear more pieces of a set to turn on its named bonus steps (they add up). A ⚔️ step also needs the set's weapon in your hand. Put pieces in a set from the 🛡️ Hero gear tab.",
+    fields:[
+      {key:"Id",label:"🆔 ID (code name)",type:"id",hint:"Pieces point at this name."},
+      {key:"Display",label:"🏷️ Set name players see",type:"text"},
+      {key:"Icon",label:"😀 Icon",type:"emoji"},
+      {key:"Glow",label:"✨ Sparkle color",type:"color",hint:"Shows on the player when a step with ✨ is on."},
+      {key:"Weapon",label:"⚔️ Set weapon",type:"select",optional:true,options:()=>({"":"— no weapon —",...Object.fromEntries((S.data.weapons||[]).map(w=>[w.Name,`${w.Icon} ${w.Display||w.Name}${w.Boss?" 🏆":""}`]))}),
+        hint:"⚔️ steps need this weapon in hand. Its own dungeon boss drops it; untick 🎁 Capsules on it in ⚔️ Weapons to keep it special."},
+      {key:"Steps",label:"🎁 Bonus steps (each has its own name)",type:"steps",wide:true},
+      {key:"_pieces",label:"🛡️ Pieces in this set",type:"members",wide:true},
+    ]},
+  herolooks:{icon:"🎨",label:"Gear looks",idKey:"Id",canAdd:true,canDelete:false,rarities:null,
+    title:it=>it.Id, sub:it=>`${it.Material||"SmoothPlastic"}${it.Glow?" · glows":""}${it.Extra?" · "+it.Extra:""}`,
+    blank:()=>({Id:"",Icon:"🎨",Color:"#ffffff",Accent:"#ff88aa",Material:"SmoothPlastic"}),
+    note:"🎨 How a piece looks on the player: main color, accent color (bands, gems) and material. The ID is also the tier name that 🛡️ Hero gear picks.",
+    fields:[
+      {key:"Id",label:"🆔 ID (tier name)",type:"id"},
+      {key:"Icon",label:"😀 Tier icon",type:"emoji",optional:true,hint:"Used by pieces with no icon of their own."},
+      {key:"Color",label:"🎨 Main color",type:"color"},
+      {key:"Accent",label:"🎨 Accent color",type:"color"},
+      {key:"Material",label:"🧱 Material",type:"select",options:MATERIALS},
+      {key:"Shine",label:"✨ Shine (0–0.5)",type:"number",optional:true,min:0,step:0.05,hint:"Shiny like metal. Leave empty for none."},
+      {key:"Glow",label:"💡 Accent glows",type:"bool"},
+      {key:"Extra",label:"🎀 Little extra",type:"select",optional:true,options:EXTRAS},
     ]},
 };
 // ---------------------------------------------------------------- state
@@ -371,7 +429,7 @@ function validate(){
   for (const c of S.data.capsules) {
     const tot = Object.values(c.Weights||{}).reduce((a,b)=>a+(+b||0),0);
     if (tot <= 0) add("e","capsules",c.Id,`🎁 ${c.Name}: all chances are 0`);
-    for (const [rar, w] of Object.entries(c.Weights||{})) if (w > 0 && !W.some(x => x.Rarity === rar))
+    for (const [rar, w] of Object.entries(c.Weights||{})) if (w > 0 && !W.some(x => x.Rarity === rar && fromOf(x, "weapons").includes("Capsules")))
       add("e","capsules",c.Id,`🎁 ${c.Name} can roll ${rar}, but no weapon is ${rar}`);
   }
   for (const e of S.data.eggs) {
@@ -392,6 +450,37 @@ function validate(){
     if (!Object.values(d.Cost || {}).some(n => n > 0)) add("w","decor",d.Name,`🏡 ${d.Name} is free`);
     for (const [r, n] of Object.entries(d.Cost || {})) if (!(n >= 0) || n % 1) add("e","decor",d.Name,`🏡 ${d.Name}: ${r} cost needs a whole number`);
   }
+  for (const w of W) if (!fromOf(w, "weapons").length && !(S.data.herosets||[]).some(x => x.Weapon === w.Name))
+    add("w","weapons",w.Name,`⚔️ ${w.Display}: nothing is ticked under “Where players get it” and it's no set's weapon, so nobody can get it`);
+  // 🛡️ hero gear
+  const HL = S.data.herolooks || [], HS = S.data.herosets || [], HG = S.data.herogear || [];
+  const lookIds = new Set(HL.map(l => l.Id)), setIds = new Set(HS.map(x => x.Id)), wByName = Object.fromEntries(W.map(w => [w.Name, w]));
+  for (const g of HG) {
+    if (!HERO_SLOTS[g.Slot]) add("e","herogear",g.Name,`🛡️ ${g.Name}: pick a slot`);
+    if (!lookIds.has(g.Tier)) add("e","herogear",g.Name,`🛡️ ${g.Name}: look “${g.Tier}” doesn't exist`);
+    if (g.Set && !setIds.has(g.Set)) add("e","herogear",g.Name,`🛡️ ${g.Name}: set “${g.Set}” doesn't exist`);
+    const gf = fromOf(g, "herogear");
+    if (gf.includes("Craft") && !["Leaf","Stone","Iron"].includes(g.Tier)) add("e","herogear",g.Name,`🛡️ ${g.Name}: 🔨 Workbench only works for Leaf / Stone / Iron looks (they have costs)`);
+    if (!gf.length) add("w","herogear",g.Name,`🛡️ ${g.Name}: nothing is ticked under “Where players get it”, so nobody can get it`);
+  }
+  for (const x of HS) {
+    const n = HG.filter(g => g.Set === x.Id).length, names = new Set();
+    if (!(x.Steps || []).length) add("w","herosets",x.Id,`✨ ${x.Display}: no bonus steps`);
+    for (const st of x.Steps || []) {
+      if (!String(st.Name || "").trim()) add("e","herosets",x.Id,`✨ ${x.Display}: a bonus step has no name`);
+      else if (names.has(st.Name)) add("e","herosets",x.Id,`✨ ${x.Display}: two steps are called “${st.Name}”`);
+      names.add(st.Name);
+      if (!(Number.isInteger(st.Pieces) && st.Pieces >= 0 && st.Pieces <= 6)) add("e","herosets",x.Id,`✨ ${x.Display}: “${st.Name}” pieces must be 0–6`);
+      else if (st.Pieces > n) add("w","herosets",x.Id,`✨ ${x.Display}: “${st.Name}” needs ${st.Pieces} pieces but the set only has ${n}`);
+      if (st.Weapon && !x.Weapon) add("e","herosets",x.Id,`✨ ${x.Display}: “${st.Name}” needs the set weapon, but the set has none`);
+      if (!st.Weapon && !st.Pieces) add("w","herosets",x.Id,`✨ ${x.Display}: “${st.Name}” is always on (0 pieces)`);
+      if (!pctTxt(st)) add("w","herosets",x.Id,`✨ ${x.Display}: “${st.Name}” gives nothing`);
+    }
+    if (x.Weapon && !wByName[x.Weapon]) add("e","herosets",x.Id,`✨ ${x.Display}: weapon “${x.Weapon}” doesn't exist`);
+    else if (x.Weapon && fromOf(wByName[x.Weapon], "weapons").includes("Capsules")) add("w","herosets",x.Id,`✨ ${x.Display}: its weapon also comes from 🎁 capsules (untick that in ⚔️ Weapons to keep it special)`);
+    if (x.Weapon && HS.some(o => o !== x && o.Weapon === x.Weapon)) add("e","herosets",x.Id,`✨ ${x.Display}: another set already uses ${x.Weapon}`);
+  }
+  for (const l of HL) if (!MATERIALS.includes(l.Material || "SmoothPlastic")) add("e","herolooks",l.Id,`🎨 ${l.Id}: unknown material`);
   const SK = S.data.skills, byId = Object.fromEntries(SK.map(s => [s.Id, s]));
   for (const s of SK) {
     if (s.Req) {
@@ -528,7 +617,7 @@ function cur(){ const T = TABS[S.tab]; return (S.data[S.tab]||[]).find(it => it[
 function addItem(obj, baseId){
   const T = TABS[S.tab], list = S.data[S.tab];
   const sep = T.spacedId ? " " : "";
-  let base = (baseId || ({weapons:"NewWeapon",pets:"Newpet",eggs:"NewEgg",decor:"New Decoration"}[S.tab])).replace(/ ?\d+$/,""), n = 2, id = base + (baseId ? sep + n : "");
+  let base = (baseId || ({weapons:"NewWeapon",pets:"Newpet",eggs:"NewEgg",decor:"New Decoration",herogear:"NewGear",herosets:"NewSet",herolooks:"NewLook"}[S.tab])).replace(/ ?\d+$/,""), n = 2, id = base + (baseId ? sep + n : "");
   while (list.some(it => it[T.idKey] === id)) id = base + sep + (n++);
   obj[T.idKey] = id;
   if (S.tab === "weapons" && !baseId) obj.Display = "New Weapon";
@@ -582,7 +671,29 @@ function fieldHtml(T, it, f, fi){
     }
     case "text": case "emoji": return `<input type="text" ${a} value="${esc(v ?? "")}"${f.type==="emoji"?` style="font-size:22px;max-width:120px"`:""}>`;
     case "number": return `<input type="number" ${a} value="${v ?? ""}" step="${f.step ?? "any"}"${f.min!==undefined?` min="${f.min}"`:""}${f.max!==undefined?` max="${f.max}"`:""}${f.optional?` placeholder="(none)"`:""}>`;
-    case "select": return `<select ${a}>${opts(f.options, v)}</select>`;
+    case "select": return `<select ${a}>${opts(typeof f.options === "function" ? f.options(it) : f.options, v ?? "")}</select>`;
+    case "from": {
+      const have = fromOf(it, S.tab);
+      return `<div class="tagbox">${Object.entries(f.options).map(([k, t]) => `<label class="toggle" style="margin-right:14px"><input type="checkbox" ${a} data-sub="${k}"${have.includes(k) ? " checked" : ""}> ${esc(t)}</label>`).join("")}</div>`;
+    }
+    case "members": {
+      const ps = (S.data.herogear||[]).filter(g => g.Set === it.Id);
+      return ps.length ? `<div>${ps.map(g => `${esc(g.Icon || "🛡️")} ${esc(g.Display || g.Name)} <span class="hint">(${esc(HERO_SLOTS[g.Slot]||g.Slot)})</span>`).join("<br>")}</div>`
+        : `<div class="hint">No pieces yet. In 🛡️ Hero gear, pick this set under “Part of set”.</div>`;
+    }
+    case "steps": {
+      const steps = v || [], cell = (i, k, st) => `<input type="number" ${a} data-i="${i}" data-sub="${k}" min="0" step="1" value="${st[k] ? +(st[k] * 100).toFixed(2) : ""}" placeholder="0">`;
+      return `<div class="steps"><div class="steprow head"><span>🏷️ Bonus name</span><span>Needs</span><span>Pieces</span><span>⚡ Power %</span><span>❤️ HP %</span><span>🛡️ Less hurt %</span><span>👟 Speed %</span><span>✨</span><span></span></div>` +
+        steps.map((st, i) => `<div class="steprow">
+          <input type="text" ${a} data-i="${i}" data-sub="Name" value="${esc(st.Name)}" placeholder="e.g. Slime Splash">
+          <select ${a} data-i="${i}" data-sub="Kind"><option value="armor"${st.Weapon ? "" : " selected"}>🛡️ Armor</option><option value="weapon"${st.Weapon ? " selected" : ""}>⚔️ Armor + weapon</option></select>
+          <input type="number" ${a} data-i="${i}" data-sub="Pieces" min="0" max="6" step="1" value="${st.Pieces ?? 0}">
+          ${cell(i, "Pwr", st)}${cell(i, "HP", st)}${cell(i, "Def", st)}${cell(i, "Spd", st)}
+          <input type="checkbox" ${a} data-i="${i}" data-sub="Glow"${st.Glow ? " checked" : ""} title="Sparkle + light">
+          <button class="btn red small" data-delstep="${i}" title="Remove this step">🗑</button></div>`).join("") +
+        `</div><button class="btn blue small" id="addStep">＋ Add bonus step</button>
+        <div class="hint">Every step you reach adds up. Numbers are %: 10 = +10%. ⚔️ steps also need the set's weapon in hand (0 pieces = the weapon alone). Now: ${esc(steps.map(st => `${st.Name}: ${pctTxt(st) || "nothing"}`).join(" · "))}</div>`;
+    }
     case "tags": {
       const all = tagsOf(S.tab), mine = v || [];
       return `<div class="tagbox">${all.map(t => `<span class="tagchip${mine.includes(t) ? " on" : ""}" data-tag="${esc(t)}">${mine.includes(t) ? "✔ " : ""}${esc(t)}</span>`).join("")}
@@ -641,6 +752,24 @@ function wire(T, it){
     const ev = (el.type === "checkbox" || el.tagName === "SELECT" || el.type === "color") ? "change" : "input";
     el.addEventListener(ev, () => {
       let rerender = !!f.rerender;
+      if (f.type === "from") {
+        const set = new Set(fromOf(it, S.tab));
+        if (el.checked) set.add(sub); else set.delete(sub);
+        it.From = Object.keys(f.options).filter(k => set.has(k));
+        delete it.Boss; delete it.Craft;
+        soft();
+        return;
+      }
+      if (f.type === "steps") {
+        const st = it.Steps[+el.dataset.i];
+        if (sub === "Name") st.Name = el.value;
+        else if (sub === "Kind") { if (el.value === "weapon") st.Weapon = true; else delete st.Weapon; }
+        else if (sub === "Pieces") st.Pieces = el.value === "" ? NaN : +el.value;
+        else if (sub === "Glow") { if (el.checked) st.Glow = true; else delete st.Glow; }
+        else { const n = el.value === "" ? 0 : +el.value / 100; if (n) st[sub] = +n.toFixed(4); else delete st[sub]; }
+        soft();
+        return;
+      }
       if (f.type === "number") {
         if (el.value === "" && f.optional) delete it[f.key];
         else it[f.key] = el.value === "" ? NaN : +el.value;
@@ -677,6 +806,9 @@ function wire(T, it){
     });
   }
   for (const c of box.querySelectorAll("[data-tag]")) c.onclick = () => toggleTag(it, c.dataset.tag);
+  for (const b of box.querySelectorAll("[data-delstep]")) b.onclick = () => { it.Steps.splice(+b.dataset.delstep, 1); renderDetail(); soft(); };
+  const as = $("addStep");
+  if (as) as.onclick = () => { it.Steps = it.Steps || []; it.Steps.push({Name: "New Bonus", Pieces: 2, Pwr: 0.05}); renderDetail(); soft(); };
   const nt = $("newTag");
   if (nt) nt.onkeydown = e => {
     if (e.key !== "Enter") return;

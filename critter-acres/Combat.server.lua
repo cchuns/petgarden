@@ -159,6 +159,7 @@ local function giveTool(player)
 	-- in a wild land it goes straight into your hand
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum and player:GetAttribute("Realm") then hum:EquipTool(tool) end
+	if API.heroGearRefresh then task.defer(API.heroGearRefresh, player) end -- (🏆 a set's weapon bonus may turn on / off)
 	return tool
 end
 
@@ -178,7 +179,10 @@ local function rollCapsule(kind)
 	end
 	local pool = {}
 	for _, def in Data.Weapons do
-		if def.Rarity == rarity then table.insert(pool, def) end
+		if def.Rarity == rarity and Data.FromHas(def, "Capsules") then table.insert(pool, def) end -- (🧭 only weapons ticked for capsules)
+	end
+	if #pool == 0 then -- (nothing of that rarity is ticked for capsules: any of that rarity rather than nothing)
+		for _, def in Data.Weapons do if def.Rarity == rarity then table.insert(pool, def) end end
 	end
 	local def = pool[math.random(#pool)]
 	local odds = math.floor(total / (cap.Weights[rarity] or 1) * #pool + 0.5)
@@ -596,6 +600,13 @@ local function collectStar(p, by)
 	elseif g.Type == "Coins" then
 		API.addCoins(player, g.N)
 		text = "💰 +" .. g.N
+	elseif g.Type == "Weapon" then -- 🏆 a set weapon from a dungeon boss
+		local def, prof = Data.WeaponByName[g.Name], API.profiles[player]
+		if def and prof then
+			local got = addWeapon(player, prof, g.Name)
+			text, big = ("%s %s!%s"):format(def.Icon, def.Display, got.Up and (" ⭐" .. got.Stars) or (got.Coins and (" 💰+" .. got.Coins) or "")), true
+			if got.New then API.notifyAll(("%s %s found the %s %s!"):format(def.Icon, player.DisplayName, def.Rarity, def.Display)) end
+		end
 	elseif g.Type == "Gear" and API.giveHeroGear then -- 🏆 a boss gear piece (HeroGear)
 		local def = Data.HeroGearByName[g.Name]
 		local got = API.giveHeroGear(player, g.Name)
@@ -661,6 +672,20 @@ local function reward(mob, player)
 	-- 🏆 bosses can drop a boss-tier Hero Gear piece (the only way to get them)
 	local gearName = mob.boss and API.heroGearDrop and API.heroGearDrop(mob.land, mob.run and mob.run.dungeon)
 	if gearName then table.insert(gifts, {Type = "Gear", Name = gearName}) end
+	-- 🏰 a dungeon boss sometimes drops its set's weapon too
+	local setWeapon = mob.boss and mob.run and mob.run.dungeon and API.heroSetWeaponDrop and API.heroSetWeaponDrop(mob.land)
+	if setWeapon then table.insert(gifts, {Type = "Weapon", Name = setWeapon}) end
+	-- 🧭 bosses can drop a weapon ticked for there in the editor (🌀 Lands = exploration maps, 🏰 Dungeons)
+	if mob.boss and Data.WeaponDrop then
+		local src = (mob.run and mob.run.dungeon) and "Dungeons" or "Lands"
+		if math.random() < (Data.WeaponDrop[src] or 0) * k then
+			local pool = {}
+			for _, def in Data.Weapons do
+				if Data.FromHas(def, src) then table.insert(pool, def.Name) end
+			end
+			if #pool > 0 then table.insert(gifts, {Type = "Weapon", Name = pool[math.random(#pool)]}) end
+		end
+	end
 	for _, g in gifts do dropStar(player, mob.run, mob.pos, g) end
 	send(player, {Kind = "Loot", Model = mob.m, Items = {"💰+" .. coins, "⚔️ +" .. hero .. " XP"}, Stars = #gifts, Boss = mob.boss, Gray = gray or nil})
 end

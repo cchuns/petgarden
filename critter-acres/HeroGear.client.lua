@@ -296,7 +296,8 @@ local function weaponCards()
 					subText()
 					dollSoon()
 				end,
-				Tip = def.Icon .. " " .. def.Display, TipText = def.Rarity})
+				Tip = def.Icon .. " " .. def.Display,
+				TipText = def.Rarity .. (Data.HeroSetOfWeapon and Data.HeroSetOfWeapon(w.Name) and (" · weapon of the " .. Data.HeroSets[Data.HeroSetOfWeapon(w.Name)].Display) or "")})
 		end
 	end
 	return #list
@@ -328,14 +329,76 @@ function refreshInv()
 	ui.grid.CanvasPosition = Vector2.zero
 end
 
+---------------------------------------------------------------- ✨ set bonuses tab
+-- every set you have something of: its named bonus steps, ✅ on / 🔒 not yet. Weapon steps need the set's weapon in hand.
+local function buildSets()
+	local body = win.body
+	local own, ownW, worn = {}, {}, {}
+	for _, it in info.Items or {} do
+		local def = Data.HeroGearByName[it.Name]
+		if def and def.Set then own[def.Set] = (own[def.Set] or 0) + 1 end
+	end
+	for _, w in info.Weapons or {} do ownW[w.Name] = true end
+	for _, s in info.Sets or {} do worn[s.Set] = s end
+	local ids = {}
+	for id, sd in Data.HeroSets do
+		if worn[id] or own[id] or (sd.Weapon and ownW[sd.Weapon]) then table.insert(ids, id) end
+	end
+	table.sort(ids, function(a, b)
+		local A, B = worn[a] and worn[a].N or -1, worn[b] and worn[b].N or -1
+		if A ~= B then return A > B end
+		return a < b
+	end)
+	if #ids == 0 then
+		K.empty(body, "🏆", "No set pieces yet. Beat bosses to find them!", nil, nil, 1)
+		return
+	end
+	local order = 0
+	for _, id in ids do
+		local sd = Data.HeroSets[id]
+		local w = worn[id]
+		local wdef = sd.Weapon and Data.WeaponByName[sd.Weapon]
+		local onBy = {}
+		for _, st in w and w.Steps or {} do onBy[st.Name] = st.On end
+		order += 1
+		local wtxt = wdef and ("%s %s: %s"):format(wdef.Icon, wdef.Display,
+			(w and w.Holding) and "✅ in your hand" or (ownW[sd.Weapon] and "you have it, hold it for its bonus" or "not found yet")) or "No set weapon"
+		K.header(body, ("%s %s  ·  wearing %d"):format(sd.Icon or "🏆", sd.Display or id, w and w.N or 0), order, wtxt)
+		for _, step in sd.Steps or {} do
+			order += 1
+			local need
+			if step.Weapon and wdef then
+				need = (step.Pieces or 0) > 0 and ("%s %s + %d pieces"):format(wdef.Icon, wdef.Display, step.Pieces) or ("%s %s in hand"):format(wdef.Icon, wdef.Display)
+			else
+				need = ("%d pieces"):format(step.Pieces or 0)
+			end
+			local on = onBy[step.Name]
+			K.row(body, {Order = order, Icon = on and "✅" or "🔒", Title = step.Name .. (step.Weapon and "  ⚔️" or ""), Sub = need .. "  ·  " .. Data.HeroStepText(step)})
+		end
+	end
+end
+
 ---------------------------------------------------------------- the window
-local function build()
+local winTab = "Character"
+local build
+local function cleanDoll()
+	if ui.dragConn then ui.dragConn:Disconnect() ui.dragConn = nil end
+	if doll.model then doll.model:Destroy() doll.model = nil end
+end
+function build()
 	win.clear()
+	cleanDoll()
 	ui = {}
-	win.setTabs({{"Character", "🧍 Character", "Your gear and weapon"}}, "Character", function() end)
+	win.setTabs({{"Character", "🧍 Character", "Your gear and weapon"}, {"Sets", "✨ Set bonuses", "What your boss sets give you"}}, winTab, function(t)
+		winTab = t
+		local res = act("GearInfo")
+		if type(res) == "table" then info = res end
+		build()
+	end)
 	win.setHelp({{"🧍", "Tap a slot on you to see the gear you have for it."}, {"🔨", "Make Leaf, Stone and Iron gear at the Workbench."},
-		{"🏆", "Gold, Crystal and Magma gear only drop from bosses. Wear 4 of a set to sparkle!"}})
+		{"🏆", "Boss gear comes in sets. Wear more pieces (and hold the set's weapon) to turn on its ✨ set bonuses!"}})
 	subText()
+	if winTab == "Sets" then buildSets() return end
 	local body = win.body
 	local sc = win.frame:FindFirstChildOfClass("UIScale")
 	local h = math.max(420, body.AbsoluteSize.Y / (sc and sc.Scale or 1) - 16)
@@ -431,8 +494,7 @@ local function openGear(slot)
 	build()
 end
 win.onClose = function()
-	if ui.dragConn then ui.dragConn:Disconnect() ui.dragConn = nil end
-	if doll.model then doll.model:Destroy() doll.model = nil end
+	cleanDoll()
 end
 bridge.Event:Connect(function(cmd)
 	if cmd == "Gear" then openGear() end

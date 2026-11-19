@@ -133,6 +133,7 @@ end
 -- short list of what changed between two decoded bundles
 local CATS = {
 	{"weapons", "⚔️", "Name"}, {"pets", "🐾", "Species"}, {"eggs", "🥚", "Id"}, {"capsules", "🎁", "Id"}, {"skills", "🌳", "Id"}, {"decor", "🏡", "Name"},
+	{"herogear", "🛡️", "Name"}, {"herosets", "✨", "Id"}, {"herolooks", "🎨", "Id"},
 }
 local function same(a, b) return HttpService:JSONEncode(a) == HttpService:JSONEncode(b) end
 local function short(v)
