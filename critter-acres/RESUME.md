@@ -866,7 +866,7 @@ CK's decisions: crafting only at the 🔨 Workbench; the G window has one tab "�
 Pushed by line splice (Studio's old copies differed from local only by these changes). Studio = local for all five:
 - HeroGear.client.lua 18793/525433 (avatar framing 0.85 -> 1.2 for a roomier margin; Cape slot; tab labels fixed): full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
 - HeroGear.server.lua 24544/978929 (+ BUILD.Cape): GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
-- CritterData.herogear.lua 10886/864735 (block = file minus the extra trailing newline, 10885/864734): adds `Data.HeroCraftReach = 24`, the 🦸 Cape slot. In Studio the hero gear block matches this file (whole CritterData now 113207/844792)
+- CritterData.herogear.lua 10886/864744 (block = file minus the extra trailing newline, 10885/864734): adds `Data.HeroCraftReach = 24`, the 🦸 Cape slot. In Studio the hero gear block matches this file (whole CritterData now 113207/844792)
 - Combat.client.lua 39365/185350: bridge "Capsules" opens the weapons window on the Caps tab
 - CritterWorld.client.lua 64247/155808: Workbench gets a "🧍 Hero gear" tab (Leaf/Stone/Iron, GearCraft)
 
