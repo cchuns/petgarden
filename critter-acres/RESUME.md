@@ -856,16 +856,16 @@ CK paused the dungeon work to add player gear first (stage 3 boss sets need it).
   - save the place (File > Save to Roblox)
   - restart Studio once (the CritterSync plugin changed)
   - playtest a cave dungeon (🟢 Slime Cave) and an open-sky one (🌲 Root Tunnels)
-- **🛡️ Hero Gear** (section above) is the current work. CK approved a NEW Gear window design (paper-doll + browser-tab inventory): **GEAR-UI.md**. Build it next (replaces the tabbed window in HeroGear.client).
+- **🛡️ Hero Gear** (section above) is the current work. CK approved a NEW Gear window design (paper-doll + browser-tab inventory): **GEAR-UI.md**. Built and in Studio (see "Gear window rebuild" below); waiting for CK to playtest.
 - **After that:** Dungeon stage 3, starting with ⚔️ boss gear sets + 📜 furniture scrolls. Full list in TO-DEVELOP.md "🏰 Dungeon Portal".
 - **Editor helper:** `CritterEditor.ps1` serves `$names` weapons, pets, eggs, capsules, skills, decor, tags. After changing `$names`, the running helper window must be restarted (an old one answers "not found").
 - **Docs:** ARTSTYLE.md holds the part-built art rules (read it before building decorations); CLAUDE.md points to it.
 
-## ▶ Gear window rebuild (2026-11-19): WRITTEN LOCALLY, NOT PUSHED (Studio was in Play)
+## ✅ Gear window rebuild (2026-11-19): IN STUDIO (pushed 2026-11-19, each verified by length + checksum + compile)
 CK's decisions: crafting only at the 🔨 Workbench; the G window has one tab "🧍 Character" (an "👗 Outfits" tab with the same layout comes later); 🎁 Capsules stay in the old Weapons window, reached by a button in the Weapon tab.
-Local files changed (Studio still has the previous version). Push each one, then check byte length + checksum + loadstring:
+Pushed by line splice (Studio's old copies differed from local only by these changes). Studio = local for all five:
 - HeroGear.client.lua 18604/508850: full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
 - HeroGear.server.lua 23061/866571: GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
-- CritterData.herogear.lua 10104/805752: adds `Data.HeroCraftReach = 24`. Studio has the OLD block: swap the block between "-- 🛡️ HERO GEAR" and the GameData `do` block
+- CritterData.herogear.lua 10104/805752: adds `Data.HeroCraftReach = 24`. In Studio the hero gear block matches this file (whole CritterData now 112425/785800)
 - Combat.client.lua 39365/185350: bridge "Capsules" opens the weapons window on the Caps tab
 - CritterWorld.client.lua 64247/155808: Workbench gets a "🧍 Hero gear" tab (Leaf/Stone/Iron, GearCraft)

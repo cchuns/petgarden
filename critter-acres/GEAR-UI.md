@@ -1,7 +1,7 @@
 # 🛡️ Gear window: approved draft (CK, 2026-11-19)
 
 This replaces the current tabbed Gear window (HeroGear.client.lua: 🧍 Wearing / 🎒 My gear / 🔨 Craft / 👗 Looks).
-It's draft 4 from chat: the paper-doll on the left, the inventory with browser-style tabs on the right. Not built yet.
+It's draft 4 from chat: the paper-doll on the left, the inventory with browser-style tabs on the right. Built 2026-11-19 (HeroGear.client).
 
 ## Layout (one UIKit window, key G / dock 🛡️ Gear)
 ```
