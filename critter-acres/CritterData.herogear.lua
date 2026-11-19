@@ -1,6 +1,6 @@
 ----------------------------------------------------------------
 -- 🛡️ HERO GEAR: what the PLAYER wears (not pet gear, that's Data.Gear). Server: ServerScriptService.HeroGear.
--- 6 slots. Main hand = your weapon (prof.WeaponOn, Combat). The other 5 hold Hero Gear pieces.
+-- 7 slots. Main hand = your weapon (prof.WeaponOn, Combat). The other 6 hold Hero Gear pieces (Off hand = shields).
 -- Every piece adds ⚡ power (to PWR and to every hit) plus a slot bonus (❤️ HP, 🛡️ less hurt, 👟 speed in the lands).
 -- 🔨 Leaf / Stone / Iron pieces are crafted from resources (at the plaza 🔨 Workbench). 🟡 Gold / 💎 Crystal / 🔥 Magma
 --   pieces ONLY drop from bosses. A copy you already have adds a ⭐ (max 5, +10% each); maxed copies give coins.
@@ -8,10 +8,11 @@
 Data.HeroSlots = {
 	{Id = "Head", Icon = "🪖", Word = "Head"},
 	{Id = "Body", Icon = "👕", Word = "Body"},
+	{Id = "Cape", Icon = "🦸", Word = "Cape"},
 	{Id = "Legs", Icon = "👖", Word = "Legs"},
 	{Id = "Boots", Icon = "👢", Word = "Boots"},
 	{Id = "MainHand", Icon = "⚔️", Word = "Main hand"},
-	{Id = "OffHand", Icon = "🛡️", Word = "Off hand"},
+	{Id = "OffHand", Icon = "🤚", Word = "Off hand"},
 }
 Data.HeroSlotById = {}
 for i, s in Data.HeroSlots do s.Order = i Data.HeroSlotById[s.Id] = s end
@@ -23,6 +24,7 @@ Data.HeroSlotBonus = {
 	Body = {HP = 0.05, Def = 0.01},
 	Legs = {HP = 0.03},
 	Boots = {HP = 0.01, Spd = 0.02},
+	Cape = {HP = 0.02, Spd = 0.01},
 	OffHand = {Def = 0.03},
 }
 Data.HeroDefCap = 0.4 -- 🛡️ never more than 40% less hurt
@@ -36,7 +38,7 @@ Data.HeroGearCraft = {
 	Iron = {Iron = 5, Stone = 5, Coins = 120},
 }
 Data.HeroCraftReach = 24 -- 🔨 you must stand this close to the plaza Workbench to make gear
-Data.HeroSlotCostMult = {Head = 1, Body = 1.5, Legs = 1.25, Boots = 1, OffHand = 1.25}
+Data.HeroSlotCostMult = {Head = 1, Body = 1.5, Legs = 1.25, Boots = 1, Cape = 1.25, OffHand = 1.25}
 function Data.HeroCraftCost(def)
 	local base = Data.HeroGearCraft[def.Tier]
 	if not base or not def.Craft then return nil end
@@ -68,31 +70,37 @@ Data.HeroGear = {
 	{Name = "LeafVest", Display = "Leaf Vest", Slot = "Body", Tier = "Leaf", Rarity = "Common", Craft = true},
 	{Name = "LeafPants", Display = "Leaf Pants", Slot = "Legs", Tier = "Leaf", Rarity = "Common", Craft = true},
 	{Name = "LeafSandals", Display = "Leaf Sandals", Slot = "Boots", Tier = "Leaf", Rarity = "Common", Craft = true},
+	{Name = "LeafCape", Display = "Leaf Cape", Slot = "Cape", Tier = "Leaf", Rarity = "Common", Craft = true},
 	{Name = "LeafBuckler", Display = "Leaf Buckler", Slot = "OffHand", Tier = "Leaf", Rarity = "Common", Craft = true},
 	{Name = "StoneHelm", Display = "Stone Helm", Slot = "Head", Tier = "Stone", Rarity = "Uncommon", Craft = true},
 	{Name = "StonePlate", Display = "Stone Plate", Slot = "Body", Tier = "Stone", Rarity = "Uncommon", Craft = true},
 	{Name = "StoneLeggings", Display = "Stone Leggings", Slot = "Legs", Tier = "Stone", Rarity = "Uncommon", Craft = true},
 	{Name = "StoneBoots", Display = "Stone Boots", Slot = "Boots", Tier = "Stone", Rarity = "Uncommon", Craft = true},
+	{Name = "StoneCape", Display = "Stone Cape", Slot = "Cape", Tier = "Stone", Rarity = "Uncommon", Craft = true},
 	{Name = "StoneShield", Display = "Stone Shield", Slot = "OffHand", Tier = "Stone", Rarity = "Uncommon", Craft = true},
 	{Name = "IronHelm", Display = "Iron Helm", Slot = "Head", Tier = "Iron", Rarity = "Rare", Craft = true},
 	{Name = "IronArmor", Display = "Iron Armor", Slot = "Body", Tier = "Iron", Rarity = "Rare", Craft = true},
 	{Name = "IronLeggings", Display = "Iron Leggings", Slot = "Legs", Tier = "Iron", Rarity = "Rare", Craft = true},
 	{Name = "IronBoots", Display = "Iron Boots", Slot = "Boots", Tier = "Iron", Rarity = "Rare", Craft = true},
+	{Name = "IronCape", Display = "Iron Cape", Slot = "Cape", Tier = "Iron", Rarity = "Rare", Craft = true},
 	{Name = "IronShield", Display = "Iron Shield", Slot = "OffHand", Tier = "Iron", Rarity = "Rare", Craft = true},
 	{Name = "GoldenHelm", Display = "Golden Helm", Slot = "Head", Tier = "Gold", Rarity = "Epic", Set = "Gold"},
 	{Name = "GoldenArmor", Display = "Golden Armor", Slot = "Body", Tier = "Gold", Rarity = "Epic", Set = "Gold"},
 	{Name = "GoldenLeggings", Display = "Golden Leggings", Slot = "Legs", Tier = "Gold", Rarity = "Epic", Set = "Gold"},
 	{Name = "GoldenBoots", Display = "Golden Boots", Slot = "Boots", Tier = "Gold", Rarity = "Epic", Set = "Gold"},
+	{Name = "GoldenCape", Display = "Golden Cape", Slot = "Cape", Tier = "Gold", Rarity = "Epic", Set = "Gold"},
 	{Name = "GoldenShield", Display = "Golden Shield", Slot = "OffHand", Tier = "Gold", Rarity = "Epic", Set = "Gold"},
 	{Name = "CrystalHelm", Display = "Crystal Helm", Slot = "Head", Tier = "Crystal", Rarity = "Legendary", Set = "Crystal"},
 	{Name = "CrystalArmor", Display = "Crystal Armor", Slot = "Body", Tier = "Crystal", Rarity = "Legendary", Set = "Crystal"},
 	{Name = "CrystalLeggings", Display = "Crystal Leggings", Slot = "Legs", Tier = "Crystal", Rarity = "Legendary", Set = "Crystal"},
 	{Name = "CrystalBoots", Display = "Crystal Boots", Slot = "Boots", Tier = "Crystal", Rarity = "Legendary", Set = "Crystal"},
+	{Name = "CrystalCape", Display = "Crystal Cape", Slot = "Cape", Tier = "Crystal", Rarity = "Legendary", Set = "Crystal"},
 	{Name = "CrystalShield", Display = "Crystal Shield", Slot = "OffHand", Tier = "Crystal", Rarity = "Legendary", Set = "Crystal"},
 	{Name = "MagmaHelm", Display = "Magma Helm", Slot = "Head", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 	{Name = "MagmaArmor", Display = "Magma Armor", Slot = "Body", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 	{Name = "MagmaLeggings", Display = "Magma Leggings", Slot = "Legs", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 	{Name = "MagmaBoots", Display = "Magma Boots", Slot = "Boots", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
+	{Name = "MagmaCape", Display = "Magma Cape", Slot = "Cape", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 	{Name = "MagmaShield", Display = "Magma Shield", Slot = "OffHand", Tier = "Magma", Rarity = "Mythic", Set = "Magma"},
 }
 Data.HeroTierIcon = {Leaf = "🌿", Stone = "🪨", Iron = "⚙️", Gold = "🟡", Crystal = "💎", Magma = "🔥"}

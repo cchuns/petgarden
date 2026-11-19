@@ -1,6 +1,6 @@
 -- Critter Acres: HeroGear (ServerScriptService)
 -- 🛡️ What the PLAYER wears (pet gear is CraftServer / Data.Gear). Numbers + item list: Data.HeroSlots / HeroGear / HeroSets.
---   6 slots: Head, Body, Legs, Boots, MainHand (= your weapon, Combat keeps prof.WeaponOn), OffHand.
+--   7 slots: Head, Body, Cape, Legs, Boots, MainHand (= your weapon, Combat keeps prof.WeaponOn), OffHand (shields).
 --   prof.HeroGear = {{Id, Name, Stars}}, prof.HeroGearNext, prof.HeroGearOn = {[slot] = Id}
 --   prof.Cosmetics = {[name] = true} (👗 looks you own), prof.CosmeticOn = {[slot] = name}
 -- Every piece adds ⚡ power + its slot bonus. Combat reads the total through API.heroGearStats(player):
@@ -230,6 +230,26 @@ function BUILD.Boots(folder, char, look)
 			end
 		end
 	end
+end
+function BUILD.Cape(folder, char, look)
+	local up = partOf(char, "UpperTorso", "Torso")
+	if not up then return end
+	local t = up.Size
+	local r6 = up.Name == "Torso"
+	local long = t.Y * (r6 and 1.45 or 1.95) -- down to about the knees
+	local top = t.Y * (r6 and 0.42 or 0.4)
+	local back = t.Z * 0.66 + 0.08 -- just behind the body armor (characters face -Z, so the back is +Z)
+	-- the cape hangs from the shoulders and flares out a little at the bottom
+	local hang = CFrame.new(0, top, back) * CFrame.Angles(math.rad(-9), 0, 0)
+	piece(folder, up, "Box", Vector3.new(t.X * 1.05, long, 0.12), hang * CFrame.new(0, -long * 0.5, 0), look.Color, look)
+	-- a hem stripe at the bottom (accent color)
+	local hem = accent(folder, up, "Box", Vector3.new(t.X * 1.07, long * 0.08, 0.14), hang * CFrame.new(0, -long * 0.94, 0), look)
+	-- a collar over the shoulders and a round clasp in front
+	accent(folder, up, "Box", Vector3.new(t.X * 1.1, t.Y * 0.14, t.Z * 0.45), CFrame.new(0, top - t.Y * 0.02, t.Z * 0.42), look)
+	accent(folder, up, "Ball", Vector3.one * t.X * 0.16, CFrame.new(0, top - t.Y * 0.1, -t.Z * 0.58), look)
+	if look.Extra == "Leaf" then leaf(folder, up, hang * CFrame.new(t.X * 0.3, -long * 0.12, 0.08) * CFrame.Angles(math.rad(90), 0, math.rad(-25)), t.Y * 0.8) end
+	if look.Extra == "Gem" then accent(folder, up, "Ball", Vector3.one * t.X * 0.2, hang * CFrame.new(0, -long * 0.35, 0.08), look) end
+	if look.Extra == "Flame" then embers(hem, look.Accent) end
 end
 function BUILD.OffHand(folder, char, look)
 	local arm = partOf(char, "LeftLowerArm", "Left Arm")

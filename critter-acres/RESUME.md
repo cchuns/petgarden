@@ -864,8 +864,15 @@ CK paused the dungeon work to add player gear first (stage 3 boss sets need it).
 ## ✅ Gear window rebuild (2026-11-19): IN STUDIO (pushed 2026-11-19, each verified by length + checksum + compile)
 CK's decisions: crafting only at the 🔨 Workbench; the G window has one tab "🧍 Character" (an "👗 Outfits" tab with the same layout comes later); 🎁 Capsules stay in the old Weapons window, reached by a button in the Weapon tab.
 Pushed by line splice (Studio's old copies differed from local only by these changes). Studio = local for all five:
-- HeroGear.client.lua 18662/513799 (avatar framing 0.85 -> 1.2 for a roomier margin): full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
-- HeroGear.server.lua 23061/866571: GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
-- CritterData.herogear.lua 10104/805752: adds `Data.HeroCraftReach = 24`. In Studio the hero gear block matches this file (whole CritterData now 112425/785800)
+- HeroGear.client.lua 18793/525433 (avatar framing 0.85 -> 1.2 for a roomier margin; Cape slot; tab labels fixed): full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
+- HeroGear.server.lua 24544/978929 (+ BUILD.Cape): GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
+- CritterData.herogear.lua 10886/864735 (block = file minus the extra trailing newline, 10885/864734): adds `Data.HeroCraftReach = 24`, the 🦸 Cape slot. In Studio the hero gear block matches this file (whole CritterData now 113207/844792)
 - Combat.client.lua 39365/185350: bridge "Capsules" opens the weapons window on the Caps tab
 - CritterWorld.client.lua 64247/155808: Workbench gets a "🧍 Hero gear" tab (Leaf/Stone/Iron, GearCraft)
+
+## 🦸 Cape slot + 🤚 Off hand (2026-11-19, IN STUDIO, verified by length + checksum + compile)
+- 7 hero slots now: Head, Body, **Cape**, Legs, Boots, MainHand, OffHand. The Shield tab/slot is renamed **🤚 Off hand** (shields still go there).
+- Data: `HeroSlots` has Cape (🦸) between Body and Legs; `HeroSlotBonus.Cape = {HP = 0.02, Spd = 0.01}` per rarity step; `HeroSlotCostMult.Cape = 1.25`.
+  New pieces: Leaf / Stone / Iron Cape (crafted at the 🔨 Workbench) and Golden / Crystal / Magma Cape (boss drops, part of their sets, so sets have 6 pieces; the 2 / 4 bonuses are unchanged).
+- Server: `BUILD.Cape` welds a part-built cape to the UpperTorso back (collar + front clasp + hem in the accent color; Leaf/Gem/Flame extras). R6 uses a shorter cape.
+- Gear window: the Cape slot card sits top right (by the shoulder). Tab labels are now a TextLabel child (ZIndex 6) with no UIPadding on the tab: the padding had pushed the white joining strip up over the selected tab's words (the "cut in half" label).

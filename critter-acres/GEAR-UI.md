@@ -6,7 +6,7 @@ It's draft 4 from chat: the paper-doll on the left, the inventory with browser-s
 ## Layout (one UIKit window, key G / dock 🛡️ Gear)
 ```
 ┌─ 🛡️ Gear ───────────────────────────── [❤️ 815 HP] [🛡️ 12%] [⚡ 139 PWR] ─┐
-│ ┌──── left: you ────────┐  ┌Head┐┌Body┐╔Legs╗┌Boots┐┌Weapon┐┌Shield┐      │
+│ ┌──── left: you ────────┐  ┌Head┐┌Body┐╔Legs╗┌Boots┐┌Weapon┐┌Off hand┐      │
 │ │[Head]  ·····  (head)  │  ╔══════╝    ╚══════════════════════════════╗  │
 │ │[Body]  ·····  (chest) │  ║ Legs · 3 owned                           ║  │
 │ │               [Weapon]│  ║ ┌────────┐ ┌────────┐ ┌────────┐         ║  │
@@ -28,14 +28,14 @@ It's draft 4 from chat: the paper-doll on the left, the inventory with browser-s
 - A ViewportFrame with a clone of the player's own avatar, wearing their gear (HeroGearLook) and looks. Drag to spin (⟲ hint at the bottom).
 - Slot cards sit next to the body part they belong to, with a dotted line to it:
   - Left column, top to bottom: **Head** (by the head), **Body** (by the chest), **Legs** (by the legs), **Boots** (at the bottom, by the feet).
-  - Right column at hand height: **Weapon** (main hand), **Off hand** (shield) just below it.
+  - Right column: **Cape** at the top (by the shoulder), then at hand height **Weapon** (main hand) and **Off hand** (shields) just below it.
 - Slot card: small dark label tag on top (Head, Body…), the item icon, the item name. The frame is the rarity color.
 - Empty slot: dashed frame, ➕ icon, "Empty".
 - Tapping a slot (empty or not) opens that slot's inventory tab and highlights the slot (yellow outline).
 
 ## Right panel: inventory
 - **Browser-style tabs** sit on top of the panel: rounded top corners, an icon + short word each:
-  🪖 Head · 👕 Body · 👖 Legs · 👢 Boots · ⚔️ Weapon · 🛡️ Shield
+  🪖 Head · 👕 Body · 🦸 Cape · 👖 Legs · 👢 Boots · ⚔️ Weapon · 🤚 Off hand
   - Unselected: beige, a bit shorter. Selected: white, taller, yellow border, joined to the white panel under it (no line between).
 - Panel title: "<Slot> · N owned".
 - A grid of item cards (3 across), strongest first, only items for that slot:

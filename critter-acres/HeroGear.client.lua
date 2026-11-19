@@ -1,9 +1,9 @@
 -- Critter Acres: HeroGear (StarterPlayerScripts LocalScript)
 -- 🛡️ The Gear window (key G, dock button). Design: critter-acres/GEAR-UI.md (server: ServerScriptService.HeroGear).
 --   Window tab 🧍 Character (👗 Outfits comes later, same layout for cosmetics).
---   Left: your own avatar in 3D (drag to spin) with the 6 slots next to their body part:
---     Head / Body / Legs / Boots down the left, Weapon + Off hand at hand height on the right. Tap a slot = open its tab.
---   Right: your inventory with browser-style tabs (🪖 Head, 👕 Body, 👖 Legs, 👢 Boots, ⚔️ Weapon, 🛡️ Shield):
+--   Left: your own avatar in 3D (drag to spin) with the 7 slots next to their body part:
+--     Head / Body / Legs / Boots down the left; Cape by the shoulder, Weapon + Off hand at hand height on the right. Tap a slot = open its tab.
+--   Right: your inventory with browser-style tabs (🪖 Head, 👕 Body, 🦸 Cape, 👖 Legs, 👢 Boots, ⚔️ Weapon, 🤚 Off hand):
 --     only what you own for that slot, strongest first, Wear / Wearing (tap Wearing to take it off).
 --   Gear is crafted at the 🔨 Workbench (CritterWorld), not here. 🎁 Capsules: button in the Weapon tab
 --   (opens the old Weapons window, StarterPlayerScripts.Combat, on its capsules tab).
@@ -38,14 +38,15 @@ local TAB_OFF = Color3.fromRGB(239, 227, 204)
 local TAB_LINE = Color3.fromRGB(230, 205, 165)
 local PICKED = Color3.fromRGB(230, 170, 50)
 
--- the 6 slots: where the card sits on the left panel (scale x / y) and the inventory tab word
+-- the 7 slots: where the card sits on the left panel (scale x / y) and the inventory tab word
 local SLOTS = {
 	{Id = "Head", Icon = "🪖", Word = "Head", X = 0.03, Y = 0.03},
 	{Id = "Body", Icon = "👕", Word = "Body", X = 0.03, Y = 0.27},
+	{Id = "Cape", Icon = "🦸", Word = "Cape", X = 0.97, Y = 0.05},
 	{Id = "Legs", Icon = "👖", Word = "Legs", X = 0.03, Y = 0.52},
 	{Id = "Boots", Icon = "👢", Word = "Boots", X = 0.03, Y = 0.77},
 	{Id = "MainHand", Icon = "⚔️", Word = "Weapon", X = 0.97, Y = 0.30},
-	{Id = "OffHand", Icon = "🛡️", Word = "Shield", X = 0.97, Y = 0.53},
+	{Id = "OffHand", Icon = "🤚", Word = "Off hand", X = 0.97, Y = 0.53},
 }
 
 local win = K.window(gui, {Icon = "🛡️", Title = "Gear", Max = Vector2.new(940, 620)})
@@ -185,7 +186,7 @@ local function slotCard(parent, s)
 		refreshSlots()
 		refreshInv()
 	end)
-	K.tip(b, s.Icon .. " " .. (s.Id == "OffHand" and "Off hand" or s.Word), "Tap to see what you have for this slot")
+	K.tip(b, s.Icon .. " " .. s.Word, "Tap to see what you have for this slot")
 	-- a little dotted line toward the body part
 	for i = 1, 4 do
 		K.frame(parent, {AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(5, 5), BackgroundColor3 = Color3.fromRGB(210, 190, 156), ZIndex = 2,
@@ -203,10 +204,7 @@ local function rebuildTabs()
 		local on = pick == s.Id
 		local t = Instance.new("TextButton")
 		t.AutoButtonColor = false
-		t.Font = K.FONT
-		t.TextScaled = true
-		t.Text = s.Icon .. " " .. s.Word
-		t.TextColor3 = on and K.BROWN or K.SOFT
+		t.Text = ""
 		t.BackgroundColor3 = on and K.WHITE or TAB_OFF
 		t.Position = UDim2.new((i - 1) / n, 2, 0, on and 0 or 6)
 		t.Size = UDim2.new(1 / n, -4, 0, on and 52 or 46)
@@ -217,16 +215,16 @@ local function rebuildTabs()
 		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		st.Color, st.Thickness = on and PICKED or TAB_LINE, 2
 		st.Parent = t
-		local c = Instance.new("UITextSizeConstraint")
-		c.MaxTextSize, c.MinTextSize = 18, 10
-		c.Parent = t
-		local pad = Instance.new("UIPadding")
-		pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 8), UDim.new(0, on and 14 or 12)
-		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 4), UDim.new(0, 4)
-		pad.Parent = t
+		-- (no UIPadding on the tab: it would push the white strip up over the words)
 		if on then -- white strip over its bottom edge: the tab and the panel join with no line between
-			K.frame(t, {Position = UDim2.new(0, -2, 1, -12), Size = UDim2.new(1, 4, 0, 14), BackgroundColor3 = K.WHITE, ZIndex = 5})
+			K.frame(t, {Position = UDim2.new(0, -2, 1, -10), Size = UDim2.new(1, 4, 0, 12), BackgroundColor3 = K.WHITE, ZIndex = 5})
 		end
+		-- the words sit in the part of the tab above the panel, on top of the strip
+		local word = K.text(t, {Text = s.Icon .. " " .. s.Word, Position = UDim2.fromOffset(4, on and 8 or 7), Size = UDim2.new(1, -8, 0, on and 30 or 28),
+			TextColor3 = on and K.BROWN or K.SOFT, ZIndex = 6})
+		local c = word:FindFirstChildOfClass("UITextSizeConstraint") or Instance.new("UITextSizeConstraint")
+		c.MaxTextSize, c.MinTextSize = 18, 9
+		c.Parent = word
 		t.Activated:Connect(function()
 			pick = s.Id
 			refreshSlots()
@@ -311,7 +309,7 @@ function refreshInv()
 		gearCards(list)
 		n = #list
 	end
-	ui.title.Text = ("%s %s  ·  %d owned"):format(s.Icon, s.Id == "OffHand" and "Off hand" or s.Word, n)
+	ui.title.Text = ("%s %s  ·  %d owned"):format(s.Icon, s.Word, n)
 	ui.empty.Visible = n == 0
 	ui.grid.CanvasPosition = Vector2.zero
 end
