@@ -115,7 +115,7 @@ local function buildDoll()
 	local cam = vf.CurrentCamera
 	local h = math.max(size.Y, 4)
 	cam.FieldOfView = 30
-	local dist = (h * 0.85) / math.tan(math.rad(15))
+	local dist = (h * 1.2) / math.tan(math.rad(15)) -- 1.2 = roomy margin around you (bigger = smaller avatar)
 	cam.CFrame = CFrame.lookAt(Vector3.new(0, cf.Position.Y, -dist), Vector3.new(0, cf.Position.Y, 0))
 end
 -- a moment after a change the server re-dresses you: show the new look

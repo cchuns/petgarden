@@ -864,7 +864,7 @@ CK paused the dungeon work to add player gear first (stage 3 boss sets need it).
 ## ✅ Gear window rebuild (2026-11-19): IN STUDIO (pushed 2026-11-19, each verified by length + checksum + compile)
 CK's decisions: crafting only at the 🔨 Workbench; the G window has one tab "🧍 Character" (an "👗 Outfits" tab with the same layout comes later); 🎁 Capsules stay in the old Weapons window, reached by a button in the Weapon tab.
 Pushed by line splice (Studio's old copies differed from local only by these changes). Studio = local for all five:
-- HeroGear.client.lua 18604/508850: full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
+- HeroGear.client.lua 18662/513799 (avatar framing 0.85 -> 1.2 for a roomier margin): full rewrite to the GEAR-UI.md layout (avatar ViewportFrame + body-aligned slots, browser tabs, Weapon tab equips weapons via WeaponEquip)
 - HeroGear.server.lua 23061/866571: GearInfo adds Weapons + WeaponOn; GearCraft refuses farther than Data.HeroCraftReach from root.Workbench.Table
 - CritterData.herogear.lua 10104/805752: adds `Data.HeroCraftReach = 24`. In Studio the hero gear block matches this file (whole CritterData now 112425/785800)
 - Combat.client.lua 39365/185350: bridge "Capsules" opens the weapons window on the Caps tab
